@@ -1,6 +1,11 @@
 <template>
 <div id="introbody">
-    <h1 id='页面介绍'>页面介绍</h1>
+    <div id="heading">
+        <h1 id='页面介绍'>页面介绍</h1>
+        </div>
+    <div id="separator">
+        <hr>
+    </div>
     <h2 id='功能'>功能</h2>
     <p>根据提供的字段进行课程查找，是 1 系统的增强版。</p>
     <h2 id='缘起'>缘起</h2>
