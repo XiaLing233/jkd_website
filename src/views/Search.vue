@@ -1,76 +1,94 @@
 <template>
-<main>
-    <input
+  <div>
+    <h1>课程检索</h1>
+    <div v-for="(condition, index) in conditions" :key="index" class="search-condition">
+      <!-- Show the connector dropdown only if it's not the first condition -->
+      <div v-if="index !== 0">
+        <span>Connector:</span>
+        <select v-model="condition.connector">
+          <option value="and">AND</option>
+          <option value="or">OR</option>
+          <option value="not">NOT</option>
+        </select>
+      </div>
+
+      <select v-model="condition.selectedItem">
+        <option value="" disabled>Select Item</option>
+        <option v-for="item in availableItemsFor(index)" :key="item" :value="item">{{ item }}</option>
+      </select>
+      <input
         type="text"
-        v-model="searchQuery"
-        placeholder="Search for keywords"
-    />
-    <table>
-        <thead>
-        <tr>
-            <th @click="sortTable('name')">Name</th>
-            <th @click="sortTable('age')">Age</th>
-            <th @click="sortTable('city')">City</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr v-for="item in filteredAndSortedItems" :key="item.id">
-            <td>{{ item.name }}</td>
-            <td>{{ item.age }}</td>
-            <td>{{ item.city }}</td>
-        </tr>
-        </tbody>
-    </table>
-    </main>
+        v-model="condition.searchWord"
+        placeholder="Enter search word"
+      />
+
+      <button @click="removeCondition(index)">Remove</button>
+    </div>
+    <button @click="addCondition" :disabled="!canAddCondition">Add Condition</button>
+    <button @click="submitSearch">Search</button>
+  </div>
 </template>
 
 <script>
 export default {
   data() {
     return {
-      searchQuery: "",
-      sortKey: "",
-      sortAsc: true,
-      items: [
-        { id: 1, name: "Alice", age: 25, city: "New York" },
-        { id: 2, name: "Bob", age: 30, city: "San Francisco" },
-        { id: 3, name: "Charlie", age: 28, city: "Los Angeles" },
-        // Add more items as needed
-      ],
+      conditions: [{ selectedItem: '', searchWord: '', connector: '' }],
+      allItems: ['Item 1', 'Item 2', 'Item 3', 'Item 4'], // All available items
     };
   },
   computed: {
-    filteredAndSortedItems() {
-      // Filter items by search query
-      let filteredItems = this.items.filter((item) => {
-        return Object.values(item).some((value) =>
-          String(value).toLowerCase().includes(this.searchQuery.toLowerCase())
-        );
-      });
-
-      // Sort items
-      if (this.sortKey) {
-        filteredItems.sort((a, b) => {
-          let result = a[this.sortKey] > b[this.sortKey] ? 1 : -1;
-          return this.sortAsc ? result : -result;
-        });
-      }
-      return filteredItems;
+    canAddCondition() {
+      // Check if the number of conditions is less than all items
+      return this.conditions.length < this.allItems.length;
     },
   },
   methods: {
-    sortTable(key) {
-      if (this.sortKey === key) {
-        this.sortAsc = !this.sortAsc; // Toggle sorting order
-      } else {
-        this.sortKey = key;
-        this.sortAsc = true; // Default to ascending order
-      }
+    addCondition() {
+      this.conditions.push({ selectedItem: '', searchWord: '', connector: '' });
+    },
+    removeCondition(index) {
+      this.conditions.splice(index, 1);
+    },
+    // updateAvailableItems(index) {
+    //   // No specific updates needed here as we're managing items separately
+    // },
+    availableItemsFor(index) {
+      // Get all the selected items except the current one
+      const selectedItems = this.conditions
+        .filter((cond, i) => i !== index)
+        .map(cond => cond.selectedItem);
+      // Return all items except those already selected by other conditions
+      return this.allItems.filter(item => !selectedItems.includes(item));
+    },
+    submitSearch() {
+      const requestData = this.conditions.filter(cond => cond.selectedItem); // Filter out empty conditions
+      // Sending the HTTP request to the Flask backend
+      fetch('http://localhost:5000/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      })
+        .then(response => response.json())
+        .then(data => {
+          console.log('Search results:', data);
+        })
+        .catch(error => {
+          console.error('Error:', error);
+        });
     },
   },
 };
 </script>
 
-<style>
-
+<style scoped>
+.search-condition {
+  margin-bottom: 10px;
+}
+input[type="text"] {
+  margin-left: 10px;
+  margin-right: 10px;
+}
 </style>
