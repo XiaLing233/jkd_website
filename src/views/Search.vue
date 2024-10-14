@@ -1,6 +1,7 @@
 <template>
   <div>
     <h1>课程检索</h1>
+    <hr>
     <div v-for="(condition, index) in conditions" :key="index" class="search-condition">
       <!-- Show the connector dropdown only if it's not the first condition -->
       <div v-if="index !== 0">

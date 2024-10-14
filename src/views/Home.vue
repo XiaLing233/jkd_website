@@ -74,15 +74,15 @@ export default {
         text-decoration: underline;
     }
 
-    introbody h1 {
+    #introbody h1 {
         text-align: center;
         font-weight: bold;
     }
 
-    introbody h2 {
+    #introbody h2 {
         font-size: 20px;
     }
-    introbody h3 {
+    #introbody h3 {
         font-size: 18px;
     }
     .table-figure {
