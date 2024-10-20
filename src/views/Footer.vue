@@ -6,7 +6,7 @@
         </div>
 </template>
 
-<style>
+<style scoped>
     #footer {
         background-color:rgb(233, 232, 232);
         text-align: center;

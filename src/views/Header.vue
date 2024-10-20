@@ -19,7 +19,7 @@
 
 </script>
 
-<style>
+<style scoped>
     #header {
         background-color: white;
         justify-content: space-between;

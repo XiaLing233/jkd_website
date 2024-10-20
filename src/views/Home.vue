@@ -18,7 +18,7 @@
         <th>后端</th>
         <th>数据库</th>
     </tr>
-</thead>
+    </thead>
     <tbody>
         <tr>
             <td>vue</td>
@@ -68,6 +68,7 @@ export default {
     #introbody {
         font-family: 'Times New Roman', "新宋体";
         margin: 20px;
+        max-width: 800px
     }
 
     #introbody h2:hover, h3:hover {
@@ -89,11 +90,12 @@ export default {
         margin: 0;
         padding: 0;
     }
-    table {
+    #introbody table {
+        max-width: 400px; /* 设置表格的最大宽度 */
         border-collapse: collapse;
         width: 100%;
     }
-    th, td {
+    #introbody th, td {
         border: 1px solid black;
         text-align: center;
     }

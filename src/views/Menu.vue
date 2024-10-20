@@ -6,7 +6,7 @@
     </ul>
 </template>
 
-<style>
+<style scoped>
     #menu li {
         /* padding-left: 20px; */
         /* padding-right: 20px; */

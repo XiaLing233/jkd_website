@@ -11,7 +11,7 @@
 
 </template>
 
-<style>
+<style scoped>
     * {
         font-family: 'Times New Roman', "宋体", serif;
     }
@@ -24,10 +24,13 @@
         padding-bottom: 10px;
         margin-left: 80px;
         margin-right: 80px;
-        max-width: 1000px;
+        /* max-width: 1000px; */
         margin: 0 auto;
         background-color:white;
         min-height: 800px;
+        justify-content: center;
+        /* align-items: center; */
+        display: flex;
     }
 
 </style>
