@@ -8,7 +8,7 @@
 
 <style scoped>
     #footer {
-        background-color:rgb(233, 232, 232);
+        /* background-color:rgb(233, 232, 232); */
         text-align: center;
         position: relative;
         /* bottom: 0; */

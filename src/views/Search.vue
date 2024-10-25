@@ -1,64 +1,86 @@
 <template>
-    
-    <!-- 调试用 -->
-    <!-- <div>
-      <h2>Available Items:</h2>
-      <ul>
-        <li v-for="item in allItems" :key="item">{{ item }}</li>
-      </ul>
-    </div> -->
-
-    <!-- <div>
-      <h2>Available Items:</h2>
-      <ul>
-        <li v-for="item in allItems" :key="item">{{ item }}</li>
-      </ul>
-    </div> -->
-
     <div id="searchbody"> <!-- 搜索主体 -->
     <h1>课程检索</h1>
     <hr>
-
     <!-- 搜索条件 -->
     <div class="search-conditions-container">
 
-      <!-- 搜索条件 -->
-      <div v-for="(condition, index) in conditions" :key="index" class="search-condition">
-        <!-- 显示连接符的下拉菜单（如果不是第一个条件） -->
-        <div v-if="index !== 0">
-          <span>布尔连接符:</span>  <!-- 连接符 -->
-          <select v-model="condition.connector">
-            <option value="AND">AND</option>
-            <option value="OR">OR</option>
-            <option value="NOT">NOT</option>
-          </select>
+      <!-- 选择学期 -->
+      <div class="search-terms">
+      <!-- 全选/取消全选 checkbox -->
+
+      <!-- 下拉式选择器 -->
+      <div>
+      <button @click="toggleDropdown" class="search-button" style="margin-bottom: 10px;">{{ dropdownOpen ? '收起学期' : '展开学期' }}</button>
+
+      <div v-if="dropdownOpen">
+        <div class="tabs select-all">
+        <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" id="selectAll" />
+        <label for="selectAll">全选/取消全选</label>
+       </div>
+
+       <div class="terms-container">
+        <div v-for="term in terms" :key="term" class="tabs term">
+          <input type="checkbox" 
+                 :value="term" 
+                 v-model="selectedTerms" 
+                 :id="term" />
+          <label :for="term">{{ term }}</label>
+          </div>
         </div>
+    </div>
+  </div>
+</div>
 
-        <!-- 选择字段的下拉菜单 -->
-        <select v-model="condition.selectedItem" @change="fetchFieldOptions(index)"> <!-- 当改变字段时，调用 fetchFieldOptions 方法 -->
-          <option value="" disabled>请选择</option> <!-- 默认选项 -->
-          <option v-for="item in availableItemsFor(index)" :key="item" :value="item">{{ item }}</option>  <!-- 可选字段 -->
-        </select>
+    <br>
 
-        <!-- 输入搜索词 -->
-        <input
-          type="text"
-          v-model="condition.searchWord"
-          placeholder="请输入搜索词"
-          :list="'keywords-' + index"
-        />
-        <button @click="condition.searchWord = ''" style="margin-left: 5px;" class="search-button">清空关键词</button>
-        <datalist :id="'keywords-' + index"> <!-- 根据条件的索引生成不同的 datalist -->
-          <option v-for="option in condition.options" :key="option" :value="option">{{ option }}</option>
-        </datalist>
+    <button @click="toggleDropdown2" class="search-button" style="margin-bottom: 10px;">{{ dropdownOpen2 ? '收起条件' : '展开条件' }}</button>
 
-        <button @click="removeCondition(index)" class="search-button">移除条件</button> <!-- 移除条件按钮 -->
+    <!-- 搜索条件 -->
+
+      <div v-if="dropdownOpen2" id="query-container">
+        <div class="search-query-container">
+          <div v-for="(condition, index) in conditions" :key="index" class="search-condition">
+            <!-- 显示连接符的下拉菜单（如果不是第一个条件） -->
+            <div v-if="index !== 0">
+              <span>连接:</span>  <!-- 连接符 -->
+              <select v-model="condition.connector">
+                <option value="AND">AND</option>
+                <option value="OR">OR</option>
+                <option value="NOT">NOT</option>
+              </select>
+            </div>
+
+            <!-- 选择字段的下拉菜单 -->
+            <select v-model="condition.selectedItem" @change="fetchFieldOptions(index)"> <!-- 当改变字段时，调用 fetchFieldOptions 方法 -->
+              <option value="" disabled>请选择</option> <!-- 默认选项 -->
+              <!-- <option v-for="item in availableItemsFor(index)" :key="item" :value="item">{{ item }}</option>  可选字段 -->
+              <option v-for="item in allItems" :key="item" :value="item">{{ item }}</option>  <!-- 可选字段 -->
+            </select>
+
+            <!-- 输入搜索词 -->
+            <input
+              type="text"
+              v-model="condition.searchWord"
+              placeholder="请输入搜索词"
+              :list="'keywords-' + index"
+            />
+            <button @click="condition.searchWord = ''" style="margin-left: 5px;" class="search-button">清空关键词</button>
+            <datalist :id="'keywords-' + index"> <!-- 根据条件的索引生成不同的 datalist -->
+              <option v-for="option in condition.options" :key="option" :value="option">{{ option }}</option>
+            </datalist>
+
+            <button @click="removeCondition(index)" class="search-button">移除条件</button> <!-- 移除条件按钮 -->
+          </div>
+          </div>
+        
+          <div id="separator">
+            <!-- <button @click="addCondition" :disabled="!canAddCondition" class="search-button">添加条件</button> 添加条件按钮 -->
+            <button @click="addCondition" class="search-button">添加条件</button> <!-- 添加条件按钮 -->
+            <button @click="submitSearch" class="search-button">搜索</button>   <!-- 搜索按钮 -->
+          </div>
       </div>
-    </div>
-    <div id="separator">
-      <button @click="addCondition" :disabled="!canAddCondition" class="search-button">添加条件</button> <!-- 添加条件按钮 -->
-      <button @click="submitSearch" class="search-button">搜索</button>   <!-- 搜索按钮 -->
-    </div>
+  </div>
 
     <br>
     <br>
@@ -74,6 +96,7 @@
       <div v-else-if="searchResults.length > 0">
         <!-- 列选择复选框 -->
       <div class="tabs">
+        <label><input type="checkbox" v-model="showTerm" /> 学期</label>
         <label><input type="checkbox" v-model="showCourseNumber" /> 课程序号</label>
         <label><input type="checkbox" v-model="showCourseName" /> 课程名称</label>
         <label><input type="checkbox" v-model="showTeacher" /> 授课教师（工号）</label>
@@ -87,6 +110,7 @@
       <table>
         <thead>
           <tr>
+            <th v-if="showTerm" style="width: 10%;">学期</th>
             <th v-if="showCourseNumber" style="width: 5%;">课程序号</th>
             <th v-if="showCourseName" style="width: 20%;">课程名称</th>
             <th v-if="showTeacher" style="width: 15%;">授课教师（工号）</th>
@@ -94,20 +118,21 @@
             <th v-if="showCampus" style="width: 7%;">校区</th>
             <th v-if="showMajor" style="width: 15%;">听课专业</th>
             <th v-if="showSchedule" style="width: 20%;">排课信息</th>
-            <th v-if="showDepartment" style="width: 13%;">开课学院</th>
+            <th v-if="showDepartment" style="width: 15%;">开课学院</th>
 
           </tr>
         </thead>
         <tbody>
           <tr v-for="(result, index) in paginatedResults" :key="index">
-            <td v-if="showCourseNumber">{{ result[0] }}</td> <!-- 课程序号 -->
-            <td v-if="showCourseName">{{ result[1] }}</td> <!-- 课程名称 -->
-            <td v-if="showTeacher">{{ formatTeachers(result[3], result[4]) }}</td> <!-- 合并教师名称和工号 -->
-            <td v-if="showCourseType">{{ result[5] }}</td> <!-- 课程性质 -->
-            <td v-if="showCampus">{{ result[7] }}</td> <!-- 校区 -->
-            <td v-if="showMajor">{{ result[8] }}</td> <!-- 听课专业 -->
-            <td v-if="showSchedule">{{ result[12] }}</td> <!-- 排课信息 -->
-            <td v-if="showDepartment">{{ result[13] }}</td> <!-- 开课学院 -->
+            <td v-if="showTerm">{{ result[0] }}</td> <!-- 学期 -->
+            <td v-if="showCourseNumber">{{ result[1] }}</td> <!-- 课程序号 -->
+            <td v-if="showCourseName">{{ result[2] }}</td> <!-- 课程名称 -->
+            <td v-if="showTeacher">{{ formatTeachers(result[4], result[5]) }}</td> <!-- 合并教师名称和工号 -->
+            <td v-if="showCourseType">{{ result[7] }}</td> <!-- 课程性质 -->
+            <td v-if="showCampus">{{ result[9] }}</td> <!-- 校区 -->
+            <td v-if="showMajor">{{ result[10] }}</td> <!-- 听课专业 -->
+            <td v-if="showSchedule">{{ result[14] }}</td> <!-- 排课信息 -->
+            <td v-if="showDepartment">{{ result[15] }}</td> <!-- 开课学院 -->
           </tr>
         </tbody>
       </table>
@@ -131,8 +156,18 @@
       </div>
     </div>
 
+    <div v-else-if="searchResults.length === 0">
+      <img src="../assets/notfound.png" alt="No data" style="display: block; margin: 0 auto; width: 25%; height: auto;" />
+    </div>
+
     <div v-else>
-      <h1>{{searchResults}}</h1>
+      <h1>{{searchResults.message}}</h1>
+    </div>
+
+    <!-- 加载动画 -->
+    <div v-if="isLoading" class="loading-overlay">
+      <img src="../assets/loading.gif" alt="Loading..." />
+      <p>Loading</p>
     </div>
   </div>
 </template>
@@ -143,7 +178,13 @@ export default {
     return {
       conditions: [{ selectedItem: '', searchWord: '', connector: '' }], // 条件数组
       allItems: [], // 所有可检索的字段
+      terms: [], // 所有学期
+      selectedTerms: [],
+      dropdownOpen: false,
+      dropdownOpen2: true,
+      selectAll: false,
       searchResults: ['default'], // 用于存储搜索结果
+      showTerm : true, // 是否显示学期
       showCourseNumber: true, // 是否显示课程序号
       showCourseName: true, // 是否显示课程名称
       showTeacher: true, // 是否显示授课教师
@@ -154,13 +195,14 @@ export default {
       showDepartment: true, // 是否显示开课学院
       currentPage: 1, // 当前页码
       pageSize: 10, // 每页显示的行数
+      isLoading: false, // 是否正在加载数据
     };
   },
   computed: {
-    canAddCondition() {
-      // 检查条件的数量是否小于所有字段数量
-      return this.conditions.length < this.allItems.length;
-    },
+    // canAddCondition() {
+    //   // 检查条件的数量是否小于所有字段数量
+    //   return this.conditions.length < this.allItems.length;
+    // },
 
     filteredResults() {
       return this.searchResults.map(result => {
@@ -199,22 +241,22 @@ export default {
       this.conditions.splice(index, 1);
     },
 
-    // 获取当前条件可选的字段
-    availableItemsFor(index) {
-      // 获取除当前条件外所有已选择的字段
-      const selectedItems = this.conditions
-        .filter((cond, i) => i !== index)
-        .map(cond => cond.selectedItem);
-      // 返回未被选择的字段
-      return this.allItems.filter(item => !selectedItems.includes(item));
-    },
+    // // 获取当前条件可选的字段
+    // availableItemsFor(index) {
+    //   // 获取除当前条件外所有已选择的字段
+    //   const selectedItems = this.conditions
+    //     .filter((cond, i) => i !== index)
+    //     .map(cond => cond.selectedItem);
+    //   // 返回未被选择的字段
+    //   return this.allItems.filter(item => !selectedItems.includes(item));
+    // },
 
     // 获取字段的选项
     fetchFieldOptions(index) {
-  const fieldName = this.conditions[index].selectedItem; // 获取当前条件的字段名
+      const fieldName = this.conditions[index].selectedItem; // 获取当前条件的字段名
 
-  // 请求字段的选项数据
-  fetch('http://localhost:5000/get_field_options', {
+      // 请求字段的选项数据
+      fetch('http://localhost:5000/get_field_options', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -231,34 +273,103 @@ export default {
         });
     },
 
+    updateConditionsWithSelectedTerms() {
+    // 获取所有学期
+    const allTerms = this.terms; // 假设 this.terms 存储了所有可用的学期
+    const excludedTerms = allTerms.filter(term => !this.selectedTerms.includes(term)); // 筛选未被选中的学期
 
+    // 如果没有未选择的学期，返回空数组
+    if (excludedTerms.length === 0) {
+      return [];
+    }
+
+    // 创建一个新条件数组
+    const newConditions = excludedTerms.map(term => ({
+      selectedItem: '学期',
+      searchWord: term,
+      connector: 'NOT' // 使用 NOT 连接
+    }));
+
+    return newConditions; // 返回新条件数组
+  },
+  
     // 提交搜索请求
     submitSearch() {
-      const requestData = this.conditions.filter(cond => cond.selectedItem); // 过滤掉空条件
-      // 发送 HTTP 请求到 Flask 后端
-      fetch('http://localhost:5000/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData),
-      })
-        .then(response => response.json())
-        .then(data => {
-          // 更新搜索结果
-          this.searchResults = data;
-          console.log('Search results:', data);
+      this.isLoading = true; // 开始加载数据
+      const excludedTermConditions = this.updateConditionsWithSelectedTerms();
+
+      if (this.selectedTerms.length === 0) {
+        alert('请选择至少一个学期');
+        this.isLoading = false; // 停止加载数据
+        return;
+      }
+
+      // 创建 conditions 的副本，并添加未选择的学期条件
+      const requestData = [
+        ...this.conditions.map(cond => ({ ...cond })), // 复制原始条件
+        ...excludedTermConditions // 添加未选择的学期条件
+      ].filter(cond => cond.selectedItem); // 过滤掉空条件
+
+      console.log('Request data:', requestData);
+        // 发送 HTTP 请求到 Flask 后端
+        fetch('http://localhost:5000/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData),
         })
-        .catch(error => {
-          console.error('Error:', error);
-        });
-    },
+          .then(response => response.json())
+          .then(data => {
+            // 更新搜索结果
+            this.isLoading = false; // 停止加载数据
+            this.searchResults = data;
+            console.log('Search results:', data);
+          })
+          .then(() => {
+            this.currentPage = 1; // 重置页码
+          })
+          .catch(error => {
+            this.isLoading = false; // 停止加载数据
+            console.error('Error:', error);
+          });
+      },      
 
     // 格式化教师信息
     formatTeachers(teachers, ids) {
+      if (!teachers) return ''; // 如果 teachers 为空，返回空字符串
       const teacherList = teachers.split(','); // 假设教师用逗号分隔
       const idList = ids.split(','); // 假设工号用逗号分隔
       return teacherList.map((teacher, index) => `${teacher.trim()} (${idList[index].trim()})`).join(', '); // 格式化
+    },
+
+    fetchTerms() {
+      fetch('http://localhost:5000/get_terms')
+        .then(response => response.json())
+        .then(data => {
+          this.terms = data;
+          // 默认选择最近的学期
+          if (this.terms.length > 0) {
+            this.selectedTerms.push(this.terms[this.terms.length - 1]); // 假设最近的学期在数组最后
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching terms:', error);
+        });
+    },
+    toggleDropdown() {
+      this.dropdownOpen = !this.dropdownOpen;
+    },
+    toggleSelectAll() {
+      if (this.selectAll) {
+        this.selectedTerms = [...this.terms]; // 全选
+      } else {
+        this.selectedTerms = []; // 取消全选
+      }
+    },
+
+    toggleDropdown2() {
+      this.dropdownOpen2 = !this.dropdownOpen2;
     },
 
   },
@@ -273,6 +384,8 @@ export default {
       .catch(error => {
         console.error('Error fetching searchable fields:', error);
       });
+
+    this.fetchTerms();
   },
 };
 </script>
@@ -331,13 +444,17 @@ export default {
 }
 
 #searchbody .search-conditions-container {
-  display: flex; /* 使用 Flexbox 布局 */
+  display: block; /* 使用 Flexbox 布局 */
   flex-wrap: wrap; /* 允许换行 */
   gap: 15px; /* 每个条件之间的间距 */
   margin-bottom: 15px; /* 下方的间距 */
 }
 
-
+.search-query-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
 
 #searchbody .search-condition:first-child select {
   margin-right: 10px; /* 为布尔连接符留出空间 */
@@ -362,6 +479,29 @@ export default {
   background-color: #7a8a8d; /* 悬停时的背景色 */
 }
 
+#query-container {
+  display: block;
+}
+
+/* 全选按钮样式 */
+.select-all {
+  margin-bottom: 10px; /* 与下面选项的间距 */
+}
+
+/* 学期选项容器样式 */
+.terms-container {
+  display: flex; /* 使用 flexbox 布局 */
+  flex-wrap: wrap; /* 允许换行 */
+}
+
+/* 学期选项样式 */
+.term {
+  flex: 1 1 auto; /* 自适应宽度，允许换行 */
+  min-width: 150px; /* 设置最小宽度 */
+  display: flex; /* 使用 flexbox 来对齐 checkbox 和 label */
+  align-items: center; /* 垂直居中对齐 */
+  margin-right: 10px; /* 右边间距 */
+}
 
 /* 搜索结果表格样式 */
 table {
@@ -430,5 +570,23 @@ th {
 .pagination button:hover:not(:disabled) {
   background-color: #e0e0e0; /* 悬停时背景颜色变深 */
 }
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color:#209ce0;
+  font-weight: bold;
+  font-size: 24px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
 
 </style>

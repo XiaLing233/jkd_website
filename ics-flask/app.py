@@ -49,13 +49,15 @@ def get_field_options():
 
     # 根据字段名查询不同的表
     if field_name == '校区': # 如果字段名是“校区”
-        query = "SELECT DISTINCT 校区 FROM course" # 查询 course 表的校区字段
+        query = "SELECT DISTINCT 校区 FROM course_all" # 查询 course_all 表的校区字段
     elif field_name == '开课学院':
-        query = "SELECT DISTINCT 开课学院 FROM course"
+        query = "SELECT DISTINCT 开课学院 FROM course_all"
     elif field_name == '课程性质':
-        query = "SELECT DISTINCT 课程性质 FROM course"
+        query = "SELECT DISTINCT 课程性质 FROM course_all"
     elif field_name == '听课专业':
-        query = "SELECT DISTINCT 听课专业 FROM course"
+        query = "SELECT DISTINCT 听课专业 FROM course_all"
+    elif  field_name == '学期':
+        query = "SELECT DISTINCT 学期 FROM course_all"
     else:
         return jsonify([])  # 返回空数组，如果没有匹配的字段
 
@@ -70,12 +72,26 @@ def get_field_options():
 
     return jsonify(options) # 返回查询结果
 
+@app.route('/get_terms', methods=['GET'])
+def get_terms():
+    conn = mysql.connector.connect(**db_config) # 连接数据库
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT DISTINCT 学期 FROM course_all") # 查询 course_all 表的学期字段
+    options = [row[0] for row in cursor.fetchall()] # 获取查询结果
+
+    cursor.close() # 关闭游标
+    conn.close() # 关闭数据库连接
+
+    return jsonify(options) # 返回查询结果
+
+
 # 搜索功能
 @app.route('/search', methods=['POST'])
 def search():
     conditions = request.json # 获取请求的 JSON 数据
     query_conditions = [] # 初始化查询条件列表
-    allowed_fields = ["课程序号", "课程名称", "授课教师", "教师工号", "课程性质", "校区", "开课学院", "排课信息", "听课专业"]
+    allowed_fields = ["学期", "课程序号", "课程名称", "授课教师", "教师工号", "课程性质", "校区", "开课学院", "排课信息", "听课专业"]
     allowed_connectors = ["AND", "OR", "NOT"] # 允许的连接词
     blacklist_searchWord = [
     "SELECT",    # 查询数据
@@ -115,6 +131,13 @@ def search():
     "THEN",      # 用于条件判断
     "ELSE",      # 用于条件判断
     "END"        # 结束条件表达式
+    ";",         # 分号
+    "'",         # 单引号
+    "\"",        # 双引号
+    "--",        # 注释
+    "/*",        # 注释
+    "%",         # 用于模糊匹配
+    "_",         # 用于模糊匹配
 ]
 
     for condition in conditions: # 遍历所有查询条件
@@ -122,31 +145,47 @@ def search():
         value = condition['searchWord'] # 获取搜索关键词
         connector = condition.get('connector', '') # 获取连接词
 
+        response_data = {
+            "message": "",
+            "status": 200,
+            "data": []
+        }
+
         if field not in allowed_fields: # 如果字段名不在允许的字段列表中
-            return jsonify({"错误": "非法字段！"}), 400 # 返回错误信息
+            response_data['message'] = "非法字段！"
+            response_data['status'] = 400
+            return jsonify(response_data) # 返回错误信息
         
         if connector and connector not in allowed_connectors: # 如果连接词存在，但不在允许的连接词列表中
-            return jsonify({"错误": "非法连接词！"}), 400 # 返回错误信息
+            response_data['message'] = "非法连接词！"
+            response_data['status'] = 400
+            return jsonify(response_data) # 返回错误信息
 
         value_upper = value.upper() # 转换为大写
 
         for word in blacklist_searchWord:
             if word in value_upper:
-                return jsonify({"错误": "非法关键词！"}), 400 # 返回错误信息
+                response_data['message'] = "非法关键词！"
+                response_data['status'] = 400
+                return jsonify(response_data) # 返回错误信息
 
         # 构建查询条件
         if connector != "NOT": # 如果连接词不是 NOT
             query_conditions.append(f"{connector} {field} LIKE '%{value}%'") # 添加连接词
 
         elif connector == "NOT":
-            query_conditions.append(f" AND {field} NOT LIKE '%{value}%'") # 添加连接词
+            # 如果是第一个条件，不添加 AND
+            if len(query_conditions) == 0:
+                query_conditions.append(f"{field} NOT LIKE '%{value}%'")
+            else:
+                query_conditions.append(f" AND {field} NOT LIKE '%{value}%'") # 添加连接词
             
         else:
             query_conditions.append(f"{field} LIKE '%{value}%'") # 不添加连接词，也就是第一个条件
 
     # 生成 SQL 查询语句
     where_clause = ' '.join(query_conditions) # 使用空格连接所有查询条件
-    query = f"SELECT * FROM course WHERE {where_clause}"    # 查询 course 表
+    query = f"SELECT * FROM course_all WHERE {where_clause} ORDER BY `学期` ASC, `课程序号` ASC"    # 查询 course_all 表
 
     print(query) # 打印查询语句
 
