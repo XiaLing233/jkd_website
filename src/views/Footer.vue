@@ -2,7 +2,7 @@
         <div id="footer">
             <p>{{ new Date().getFullYear() }} — <strong>夏凌</strong></p>
             <p><strong>计算机科学导论</strong>网站大作业</p>
-            <p>更新时间：2024/10/13</p>
+            <p>更新时间：2024/10/26</p>
         </div>
 </template>
 

@@ -31,14 +31,14 @@ def get_unique_majors(result):
 # 以下是 Flask 的路由函数
 
 # 用于获取所有可检索的字段
-@app.route('/get_searchable_fields', methods=['GET'])
+@app.route('/api/get_searchable_fields', methods=['GET'])
 def get_searchable_fields():
     # 示例字段，可以从数据库获取
     fields = ["课程序号", "课程名称", "授课教师", "教师工号", "课程性质", "校区", "开课学院", "排课信息", "听课专业"]
     return jsonify(fields)  # 使用 jsonify 确保返回的是正确的 JSON 格式
 
 # 有一些字段，提供给用户下拉菜单选择
-@app.route('/get_field_options', methods=['POST'])
+@app.route('/api/get_field_options', methods=['POST'])
 def get_field_options():
     data = request.json # 获取请求的 JSON 数据
     field_name = data.get('field_name') # 获取字段名
@@ -72,12 +72,12 @@ def get_field_options():
 
     return jsonify(options) # 返回查询结果
 
-@app.route('/get_terms', methods=['GET'])
+@app.route('/api/get_terms', methods=['GET'])
 def get_terms():
     conn = mysql.connector.connect(**db_config) # 连接数据库
     cursor = conn.cursor()
 
-    cursor.execute("SELECT DISTINCT 学期 FROM course_all") # 查询 course_all 表的学期字段
+    cursor.execute("SELECT DISTINCT 学期 FROM course_all ORDER BY 学期 ASC") # 查询 course_all 表的学期字段
     options = [row[0] for row in cursor.fetchall()] # 获取查询结果
 
     cursor.close() # 关闭游标
@@ -87,7 +87,7 @@ def get_terms():
 
 
 # 搜索功能
-@app.route('/search', methods=['POST'])
+@app.route('/api/search', methods=['POST'])
 def search():
     conditions = request.json # 获取请求的 JSON 数据
     query_conditions = [] # 初始化查询条件列表
@@ -130,7 +130,7 @@ def search():
     "WHEN",      # 用于条件判断
     "THEN",      # 用于条件判断
     "ELSE",      # 用于条件判断
-    "END"        # 结束条件表达式
+    "END",        # 结束条件表达式
     ";",         # 分号
     "'",         # 单引号
     "\"",        # 双引号
@@ -139,27 +139,32 @@ def search():
     "%",         # 用于模糊匹配
     "_",         # 用于模糊匹配
 ]
+    
+    response_data = {
+    "message": "",
+    "status": 200,
+    "data": []
+    }
 
     for condition in conditions: # 遍历所有查询条件
         field = condition['selectedItem'] # 获取字段名
         value = condition['searchWord'] # 获取搜索关键词
         connector = condition.get('connector', '') # 获取连接词
 
-        response_data = {
-            "message": "",
-            "status": 200,
-            "data": []
-        }
-
         if field not in allowed_fields: # 如果字段名不在允许的字段列表中
             response_data['message'] = "非法字段！"
             response_data['status'] = 400
-            return jsonify(response_data) # 返回错误信息
+            return jsonify(response_data), 400 # 返回错误信息
+        
+        if not value: # 如果搜索关键词为空
+            response_data['message'] = "搜索关键词不能为空！"
+            response_data['status'] = 400
+            return jsonify(response_data), 400 # 返回错误信息
         
         if connector and connector not in allowed_connectors: # 如果连接词存在，但不在允许的连接词列表中
             response_data['message'] = "非法连接词！"
             response_data['status'] = 400
-            return jsonify(response_data) # 返回错误信息
+            return jsonify(response_data), 400 # 返回错误信息
 
         value_upper = value.upper() # 转换为大写
 
@@ -195,7 +200,9 @@ def search():
         cursor.execute(query) # 执行查询
         results = cursor.fetchall() # 获取查询结果
     except Exception as e:
-        return jsonify({"错误": "至少选择1个检索条件！"}), 400
+        response_data['message'] = "至少选择1个检索条件！"
+        response_data['status'] = 400
+        return jsonify(response_data), 400
 
     cursor.close() # 关闭游标
     conn.close()    # 关闭数据库连接

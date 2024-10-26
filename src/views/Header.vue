@@ -2,7 +2,7 @@
         <div id="header">
             <div id="title">
                 <a href="https://1.tongji.edu.cn"><img height=45px width=167px src='../assets/tongji.png'></img></a>
-                <a href="/"><h1>课程检索系统</h1></a>
+                <a href="/"><img height="45px" width="auto" src="../assets/title.png"></a>
             </div>
         <Menu />
         </div>

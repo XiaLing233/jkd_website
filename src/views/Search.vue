@@ -161,7 +161,8 @@
     </div>
 
     <div v-else>
-      <h1>{{searchResults.message}}</h1>
+      <h1>{{searchResults['message']}}</h1>
+      <img src="../assets/error.png" alt="Error" style="display: block; margin: 0 auto; width: 20%; height: auto;" />
     </div>
 
     <!-- 加载动画 -->
@@ -256,7 +257,7 @@ export default {
       const fieldName = this.conditions[index].selectedItem; // 获取当前条件的字段名
 
       // 请求字段的选项数据
-      fetch('http://localhost:5000/get_field_options', {
+      fetch('/api/get_field_options', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -312,7 +313,7 @@ export default {
 
       console.log('Request data:', requestData);
         // 发送 HTTP 请求到 Flask 后端
-        fetch('http://localhost:5000/search', {
+        fetch('/api/search', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -344,7 +345,7 @@ export default {
     },
 
     fetchTerms() {
-      fetch('http://localhost:5000/get_terms')
+      fetch('/api/get_terms')
         .then(response => response.json())
         .then(data => {
           this.terms = data;
@@ -376,7 +377,7 @@ export default {
 
   mounted() {
     // 获取所有可检索的字段
-    fetch('http://localhost:5000/get_searchable_fields')
+    fetch('/api/get_searchable_fields')
       .then(response => response.json()) // 解析 JSON 数据
       .then(data => { 
         this.allItems = data; // 更新所有字段
@@ -391,20 +392,6 @@ export default {
 </script>
 
 <style scoped>
-/* 页面整体样式 */
-#searchbody {
-  font-family: "新宋体", Arial, sans-serif; /* 字体 */
-  margin: 0;
-  padding: 20px; /* 页面内边距 */
-  min-width: 1200px; /* 最小宽度 */
-}
-
-/* 标题样式 */
-#searchbody h1 {
-  text-align: center; /* 居中 */
-  font-weight: bold; /* 加粗 */
-}
-
 /* 选项卡样式 */
 .tabs {
   display: flex; /* 使用 Flexbox 布局 */
@@ -428,7 +415,15 @@ export default {
 
 /* 搜索条件样式 */
 #searchbody {
+  font-family: "新宋体", Arial, sans-serif; /* 字体 */
   width: 100%; /* 使内容占满整个宽度 */
+  margin: 0; /* 外边距 */
+  padding: 20px; /* 内边距 */
+}
+
+#searchbody h1 {
+  text-align: center; /* 居中 */
+  font-weight: bold; /* 加粗 */
 }
 
 #searchbody .search-condition {

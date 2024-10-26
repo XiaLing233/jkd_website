@@ -22,8 +22,8 @@
     #main {
         padding-top: 10px;
         padding-bottom: 10px;
-        margin-left: 80px;
-        margin-right: 80px;
+        /* margin-left: 80px; */
+        /* margin-right: 80px; */
         /* max-width: 1000px; */
         margin: 0 auto;
         background-color:white;

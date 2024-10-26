@@ -10,7 +10,7 @@
     <p>根据提供的字段进行课程查找，是 1 系统的增强版。</p>
     <h2 id='缘起'>缘起</h2>
     <p>因为 1 系统的查询系统灵活度太低，无法满足需求，因此自己编写一个查询网站。</p>
-    <h2 id='涉及的技术'>涉及的技术</h2>
+    <h2 id='涉及的技术'>涉及的主要技术</h2>
     <figure class='table-figure'><table>
     <thead>
     <tr>
@@ -46,7 +46,7 @@
 
     </ul>
     <h3 id='数据库'>数据库</h3>
-    <p>采用了 <code>MySQL</code>，共一个数据库，储存了一些表格，每个表格是一学期的所有课程。</p>
+    <p>采用了 <code>MySQL</code>，共一个数据库，储存了一张表格，是一学期的所有课程。</p>
     <ul class="intro">
     <li>对于从 1 系统导出的 <code>excel</code> 表格进行处理，需要先导出为 <code>.csv</code> 逗号分隔文件，再通过 <code>pandas</code> 库进行数据的优化整理。</li>
 
@@ -64,7 +64,7 @@ export default {
 };
 </script>
 
-<style> 
+<style scoped> 
     #introbody {
         font-family: 'Times New Roman', "新宋体";
         margin: 20px;
