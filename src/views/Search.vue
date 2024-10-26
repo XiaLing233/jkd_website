@@ -51,9 +51,18 @@
               </select>
             </div>
 
+            <!-- 否则只提供 NOT 连接符 或者为空 -->
+            <div v-else>
+              <span>连接:</span>
+              <select v-model="condition.connector">
+                <option value="NOT">NOT</option>
+                <option value="">无</option>
+              </select>
+            </div>
+
             <!-- 选择字段的下拉菜单 -->
             <select v-model="condition.selectedItem" @change="fetchFieldOptions(index)"> <!-- 当改变字段时，调用 fetchFieldOptions 方法 -->
-              <option value="" disabled>请选择</option> <!-- 默认选项 -->
+              <option value="">字段：无</option> <!-- 默认选项 -->
               <!-- <option v-for="item in availableItemsFor(index)" :key="item" :value="item">{{ item }}</option>  可选字段 -->
               <option v-for="item in allItems" :key="item" :value="item">{{ item }}</option>  <!-- 可选字段 -->
             </select>
@@ -161,7 +170,7 @@
     </div>
 
     <div v-else>
-      <h1>{{searchResults['message']}}</h1>
+      <div v-html="searchResults['message']" style="text-align: center; margin-top: 20px; font-size: 24px; font-weight: bold"></div>
       <img src="../assets/error.png" alt="Error" style="display: block; margin: 0 auto; width: 20%; height: auto;" />
     </div>
 
@@ -240,6 +249,10 @@ export default {
     // 移除条件
     removeCondition(index) {
       this.conditions.splice(index, 1);
+      // 如果只剩下一个条件，把 connector 设置为空
+      if (this.conditions.length === 1) {
+        this.conditions[0].connector = '';
+      }
     },
 
     // // 获取当前条件可选的字段
@@ -275,20 +288,11 @@ export default {
     },
 
     updateConditionsWithSelectedTerms() {
-    // 获取所有学期
-    const allTerms = this.terms; // 假设 this.terms 存储了所有可用的学期
-    const excludedTerms = allTerms.filter(term => !this.selectedTerms.includes(term)); // 筛选未被选中的学期
-
-    // 如果没有未选择的学期，返回空数组
-    if (excludedTerms.length === 0) {
-      return [];
-    }
-
-    // 创建一个新条件数组
-    const newConditions = excludedTerms.map(term => ({
+    // map 所有已经选择的学期，创建新的条件对象
+    const newConditions = this.selectedTerms.map(term => ({
       selectedItem: '学期',
       searchWord: term,
-      connector: 'NOT' // 使用 NOT 连接
+      connector: 'OR' // 使用 OR 连接
     }));
 
     return newConditions; // 返回新条件数组
@@ -298,6 +302,12 @@ export default {
     submitSearch() {
       this.isLoading = true; // 开始加载数据
       const excludedTermConditions = this.updateConditionsWithSelectedTerms();
+
+      // 重新排序，确保相同的字段在一起，而且固定第一个条件的位置不变
+      this.conditions = [
+        this.conditions[0], // 第一个条件
+        ...this.conditions.slice(1).sort((a, b) => a.selectedItem.localeCompare(b.selectedItem)),
+      ];
 
       if (this.selectedTerms.length === 0) {
         alert('请选择至少一个学期');

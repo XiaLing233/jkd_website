@@ -90,7 +90,19 @@ def get_terms():
 @app.route('/api/search', methods=['POST'])
 def search():
     conditions = request.json # 获取请求的 JSON 数据
-    query_conditions = [] # 初始化查询条件列表
+    # 构建查询条件
+    query_conditions = []
+    current_field = None
+    field_conditions = []
+    first_connector = "Empty"  # 第一个连接词
+
+    response_data = {
+    "message": "",
+    "status": 200,
+    "data": []
+    }
+    
+    # 黑白名单
     allowed_fields = ["学期", "课程序号", "课程名称", "授课教师", "教师工号", "课程性质", "校区", "开课学院", "排课信息", "听课专业"]
     allowed_connectors = ["AND", "OR", "NOT"] # 允许的连接词
     blacklist_searchWord = [
@@ -140,11 +152,6 @@ def search():
     "_",         # 用于模糊匹配
 ]
     
-    response_data = {
-    "message": "",
-    "status": 200,
-    "data": []
-    }
 
     for condition in conditions: # 遍历所有查询条件
         field = condition['selectedItem'] # 获取字段名
@@ -165,6 +172,11 @@ def search():
             response_data['message'] = "非法连接词！"
             response_data['status'] = 400
             return jsonify(response_data), 400 # 返回错误信息
+        
+        if not connector and field_conditions: # 如果连接词不存在，并且临时条件列表不为空
+            response_data['message'] = "连接词不能为空！"
+            response_data['status'] = 400
+            return jsonify(response_data), 400 # 返回错误信息
 
         value_upper = value.upper() # 转换为大写
 
@@ -174,23 +186,93 @@ def search():
                 response_data['status'] = 400
                 return jsonify(response_data) # 返回错误信息
 
-        # 构建查询条件
-        if connector != "NOT": # 如果连接词不是 NOT
-            query_conditions.append(f"{connector} {field} LIKE '%{value}%'") # 添加连接词
+        if current_field is None:
+            current_field = field
 
-        elif connector == "NOT":
-            # 如果是第一个条件，不添加 AND
-            if len(query_conditions) == 0:
-                query_conditions.append(f"{field} NOT LIKE '%{value}%'")
-            else:
-                query_conditions.append(f" AND {field} NOT LIKE '%{value}%'") # 添加连接词
-            
+        # 如果当前字段与前一个字段不同
+        if field != current_field:
+            # 将当前字段的条件括起来，并添加到查询条件列表中
+            if field_conditions:
+                 # 如果是学期，加 AND
+                if current_field == "学期":
+                    query_conditions.append(f"AND ({' '.join(field_conditions)})")
+                    print("学期")
+                else:
+                    # 如果 first_connector 为 NOT
+                    if first_connector == "NOT":
+                        # 如果是第一个条件，不加 AND
+                        if not query_conditions:
+                            print("第一个条件")
+                            query_conditions.append(f"({' '.join(field_conditions)})")
+                        else:
+                            print(first_connector)
+                            query_conditions.append(f"AND ({' '.join(field_conditions)})")
+                    else:
+                        query_conditions.append(f"{first_connector} ({' '.join(field_conditions)})")
+            # 更新当前字段，并清空临时条件列表
+            current_field = field
+            field_conditions = []
+            first_connector = connector  # 更新新的字段的第一个连接词
+
+        # 构建单个条件
+        # 如果是 NOT
+        if connector == "NOT":
+            field_condition = f"AND {field} NOT LIKE '%{value}%'"
+            # 如果是第一个条件，不加 AND
+            if not field_conditions: # 区分好 field_conditions 和 query_conditions!
+                field_condition = f"{field} NOT LIKE '%{value}%'"
         else:
-            query_conditions.append(f"{field} LIKE '%{value}%'") # 不添加连接词，也就是第一个条件
+            field_condition = f"{connector} {field} LIKE '%{value}%'"
+
+        if not field_conditions:  # 第一个条件不加 connector
+            # 如果是 NOT
+            if connector == "NOT":
+                field_condition = f"{field} NOT LIKE '%{value}%'"
+            else:
+                field_condition = f"{field} LIKE '%{value}%'"
+
+        # 将条件添加到临时列表中
+        field_conditions.append(field_condition)
+
+        # 对于第一个条件，记录连接词并重置为下一次使用
+        if first_connector == "Empty":
+            first_connector = connector
+
+    # 添加最后一个字段的条件
+    print(first_connector)
+    if field_conditions:
+        # 如果是学期，加 AND
+        if current_field == "学期":
+            # 如果选择的学期超过两个，并且学期是第一个条件（说明没有选择条件），返回错误信息
+            if not query_conditions:
+                if len(field_conditions) > 2: # 说明没有选择条件
+                    # 返回错误信息，中间有换行符
+
+                    response_data['message'] = "至少选择1个检索条件！<br>不允许在不选择条件的情况下查看超过两个学期的课程喔！"
+                    response_data['status'] = 400
+                    return jsonify(response_data), 400
+                else:
+                    query_conditions.append(f"({' '.join(field_conditions)})")
+            else:
+                query_conditions.append(f"AND ({' '.join(field_conditions)})")
+            print("学期")
+        else:
+            # 如果 first_connector 为 NOT
+            if first_connector == "NOT":
+                # 如果是第一个条件，不加 AND，因为只有可能 OR 是第一个条件
+                if not query_conditions:
+                    print("第一个条件")
+                    query_conditions.append(f"{' '.join(field_conditions)}")
+                else:
+                    print(first_connector)
+                    query_conditions.append(f"AND ({' '.join(field_conditions)})")
+            else:
+                query_conditions.append(f"{first_connector} ({' '.join(field_conditions)})")
 
     # 生成 SQL 查询语句
-    where_clause = ' '.join(query_conditions) # 使用空格连接所有查询条件
-    query = f"SELECT * FROM course_all WHERE {where_clause} ORDER BY `学期` ASC, `课程序号` ASC"    # 查询 course_all 表
+    where_clause = ' '.join(query_conditions)  # 使用空格连接所有字段的查询条件
+    query = f"SELECT * FROM course_all WHERE {where_clause} ORDER BY `学期` ASC, `课程序号` ASC"  # 查询 course_all 表
+
 
     print(query) # 打印查询语句
 
@@ -200,7 +282,7 @@ def search():
         cursor.execute(query) # 执行查询
         results = cursor.fetchall() # 获取查询结果
     except Exception as e:
-        response_data['message'] = "至少选择1个检索条件！"
+        response_data['message'] = "检索出错啦！<br>生成的 SQL 语句为：<br>" + query
         response_data['status'] = 400
         return jsonify(response_data), 400
 
