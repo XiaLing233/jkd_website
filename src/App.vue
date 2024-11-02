@@ -1,11 +1,11 @@
 <template>
-    <div id="app">
+    <div id="app" style="width: 100%; height: 100%">
         <Header />
-        <br>
-        <div id="main">
+        
+        <el-main>
             <router-view />
-        </div>
-        <br>
+        </el-main>
+        
         <Footer />
     </div>
 
@@ -13,24 +13,8 @@
 
 <style scoped>
     * {
-        font-family: 'Times New Roman', "宋体", serif;
-    }
-    #app {
-        background-color: whitesmoke;
-    }
-    
-    #main {
-        padding-top: 10px;
-        padding-bottom: 10px;
-        /* margin-left: 80px; */
-        /* margin-right: 80px; */
-        /* max-width: 1000px; */
-        margin: 0 auto;
-        background-color:white;
-        min-height: 800px;
-        justify-content: center;
-        /* align-items: center; */
-        display: flex;
+        font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC',
+  'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
     }
 
 </style>

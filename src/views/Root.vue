@@ -8,12 +8,10 @@
 <style scoped>
     #welcome h1 {
         text-align: center;
-        font-weight: bold;
     }
 
     #welcome p {
         text-align: center;
-        font-family: "楷体";
         font-size: 25px;
     }
 </style>

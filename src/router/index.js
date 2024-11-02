@@ -8,8 +8,8 @@ import Nothing from '../views/Nothing.vue';
 
 const routes = [
   { path: '/', component: Root},
-  { path: '/Home', component: Home },
-  { path: '/Contact', component: Contact },
+  { path: '/Home', component: Home},
+  { path: '/Contact', component: Contact},
   { path: '/Search', component: Search},
   { path: '/:pathMatch(.*)*', component: Nothing, meta: { title: '404 Not Found' } },
 ];

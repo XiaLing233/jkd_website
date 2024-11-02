@@ -1,11 +1,15 @@
 <template>
-        <div id="header">
-            <div id="title">
+        <el-affix><el-header style="background-color: white; display: flex; align-items: center; justify-content: space-between">
+            <div id="title-left" style="padding: 12px, 0; display: inline-flex;">
                 <a href="https://1.tongji.edu.cn"><img height=45px width=167px src='../assets/tongji.png'></img></a>
                 <a href="/"><img height="45px" width="auto" src="../assets/title.png"></a>
             </div>
-        <Menu />
-        </div>
+
+            <div id="title-right" style="padding: 12px, 0;">
+                <Menu />
+            </div>
+
+        </el-header></el-affix>
 </template>
 
 <script>
@@ -20,28 +24,5 @@
 </script>
 
 <style scoped>
-    #header {
-        background-color: white;
-        justify-content: space-between;
-        align-items: center;
-        /* padding: 10px 20px; */
-        display: flex;
-    }
 
-    #title a {
-        text-decoration: none;
-        color: black;
-    }
-
-    #title {
-        /* background-color: white; */
-        text-align: center;
-        display: flex; 
-        align-items: center;
-    }
-
-    #title h1 {
-        font-family: "楷体";
-        /* font-weight: 500; */
-    }
 </style>

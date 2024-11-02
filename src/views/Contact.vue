@@ -1,39 +1,49 @@
 <template>
     <div id="contactbody">
-        <h1>友情链接</h1>
-        <hr>
-        <p>
-        如果有改进的建议，或者发现了 bug，欢迎联系我。
-        </p>
+        <el-card shadow="never">
+            <h1>友情链接</h1>
+        <el-divider />
+        <el-card shadow="never" class="link_set" style="margin-bottom: 20px;">
+            <template #header>
+                <div>如果有改进的建议，或者发现了 bug，欢迎联系我。</div>
+            </template>
 
-        <ul class="blank_link">
-                <li><a id="mail"  href="mailto:wangxilin@tongji.edu.cn">通讯地址：wangxilin@tongji.edu.cn</a></li>
-                <li><a id="link"  href="https://github.com/XiaLing233">Github</a></li>
-        </ul>
+            <ul>
+                <li><el-link id="mail" type="primary" href="mailto:wangxilin@tongji.edu.cn"><el-icon class="el-icon--left"><Message /></el-icon>通讯地址：wangxilin@tongji.edu.cn</el-link></li>
+                <li><el-link id="link" type="primary" href="https://github.com/XiaLing233">Github</el-link></li>
+            </ul>
 
-        <p>
-            资料来源：
-        </p>
 
-        <ul class="blank_link">
-                    <li><a href="https://1.tongji.edu.cn">1系统</a></li>
-                </ul>
+        </el-card>
 
-        <p>
-            采用的技术：
-        </p>
+        <el-card shadow="never" class="link_set" style="margin-bottom: 20px;">
+            <template #header>
+                <div>资料来源：</div>
+            </template>
+            <ul>
+                <li>
+                    <el-link type="primary" href="https://1.tongji.edu.cn">1系统</el-link>
+                </li>
+            </ul>
 
-        <ul class="blank_link">
-                    <li><a href="https://vuejs.org/">Vue.js</a></li>
-                    <li><a href="https://flask.palletsprojects.com/">Flask</a></li>
-                    <li><a href="https://www.python.org/">Python</a></li>
-                    <li><a href="https://www.mysql.com/">MySQL</a></li>
-                    <li><a href="https://nginx.org/">Nginx</a></li>
-                    <li><a href="https://gunicorn.org/">gunicorn</a></li>
-                    <li><a href="https://aws.amazon.com/">Aws</a></li>
-        </ul>
-        
+        </el-card>
 
+        <el-card shadow="never" class="link_set">
+            <template #header>
+                <div> 采用的技术：</div>
+            </template>
+            <ul>
+                <li><el-link type="primary" href="https://vuejs.org/">Vue.js</el-link></li>
+                <li><el-link type="primary" href="https://flask.palletsprojects.com/">Flask</el-link></li>
+                <li><el-link type="primary" href="https://www.python.org/">Python</el-link></li>
+                <li><el-link type="primary" href="https://www.mysql.com/">MySQL</el-link></li>
+                <li><el-link type="primary" href="https://nginx.org/">Nginx</el-link></li>
+                <li><el-link type="primary" href="https://gunicorn.org/">gunicorn</el-link></li>
+                <li><el-link type="primary" href="https://aws.amazon.com/">Aws</el-link></li>
+                <li><el-link type="primary" href="https://element-plus.org/">Element Plus</el-link></li>
+            </ul>
+        </el-card>
+        </el-card>
     </div>
 </template>
 
@@ -55,52 +65,8 @@ export default {
         font-weight: bold;
     }
 
-    #mail {
-        text-decoration: none;
-        color: black;
-    }
-
-    #contactbody {
-        font-family: 'Times New Roman', "新宋体";
-        /* margin: 20px; */
-        /* max-width: 1000px; */
-        min-width: 800px;
-    }
-
-    #link {
-        text-decoration: none;
-        color: black;
-    }
-
-    #contactbody ul {
+    li {
         list-style-type: none;
-        padding: 0;
-        /* background-color: cornflowerblue; */
-        max-width: 1000px;
-        /* font-size: 20px; */
-        display: block;
-
+        padding: 2px;
     }
-
-    #contactbody ul li {
-        padding-top: 10px;
-        padding-bottom: 15px;
-    }
-
-    #contactbody ul li a:hover {
-        background-color: #e0e0e0; /* 悬停时背景颜色变深 */
-    }
-
-    #contactbody ul li a {
-        text-decoration: none;
-        background-color: #f0f0f0;
-        color: black;
-        /* color: white; */
-        /* font-weight: bold; */
-        padding-left: 20px;
-        padding-right: 20px;
-        padding-top: 10px;
-        padding-bottom: 10px;
-    }
-
 </style>

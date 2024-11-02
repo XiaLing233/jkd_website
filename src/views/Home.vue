@@ -1,11 +1,9 @@
 <template>
-<div id="introbody">
+<el-card id="introbody" shadow="never">
     <div id="heading">
         <h1 id='页面介绍'>页面介绍</h1>
         </div>
-    <div id="separator">
-        <hr>
-    </div>
+    <el-divider />
     <h2 id='功能'>功能</h2>
     <p>根据提供的字段进行课程查找，是 1 系统的增强版。</p>
     <h2 id='缘起'>缘起</h2>
@@ -56,7 +54,7 @@
     <li>使用更好看的图标</li>
     <li>根据返回的有效内容，生成一个课程时间表</li>
     </ul>
-</div>
+</el-card>
 </template>
 
 <script>
@@ -65,12 +63,6 @@ export default {
 </script>
 
 <style scoped> 
-    #introbody {
-        font-family: 'Times New Roman', "新宋体";
-        margin: 20px;
-        max-width: 800px
-    }
-
     #introbody h2:hover, h3:hover {
         text-decoration: underline;
     }
