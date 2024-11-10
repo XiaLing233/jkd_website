@@ -1,5 +1,5 @@
 <template>
-    <el-card style="align-items: center; display:flex; flex-direction: column;" shadow="never">
+    <el-card style="align-items: center; display:flex; flex-direction: column; margin: 20px" shadow="never">
         <img src="../assets/notfound.png" alt="notfound"/>
         <div>
         <h3>出错啦！该资源不存在！</h3>
