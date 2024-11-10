@@ -1,5 +1,5 @@
 <template>
-    <div id="searchbody"> <!-- 搜索主体 -->
+    <div id="searchbody" style="margin: 20px"> <!-- 搜索主体 -->
     <!-- 搜索条件 -->
      <el-card shadow="never" style="width: 100%; margin-bottom: 10px;">
       <template #header>
@@ -96,7 +96,7 @@
       </el-collapse>
      </el-card>
       
-     <el-card shadow="never">
+     <el-card shadow="never" style="width: 100%;">
       <template #header>
         <div style="font-weight: bold;">教学任务查询</div>
       </template>
@@ -276,6 +276,8 @@ export default {
         })
         .catch(error => {
           console.error('Error fetching field options:', error);
+          this.isError = true;
+          this.msg= '后端服务器未响应，请稍后再试';
           // 把 options 设置为空数组
           this.conditions[index].options = [];
         });
@@ -299,10 +301,13 @@ export default {
       this.isLoading = true; // 开始加载数据
       const excludedTermConditions = this.updateConditionsWithSelectedTerms();
 
+      // 复制一份 conditions，确保原始数据不被修改
+      let requestData = this.conditions.map(cond => ({ ...cond }));
+
       // 重新排序，确保相同的字段在一起，而且固定第一个条件的位置不变
-      this.conditions = [
-        this.conditions[0], // 第一个条件
-        ...this.conditions.slice(1).sort((a, b) => a.selectedItem.localeCompare(b.selectedItem)),
+      requestData = [
+        requestData[0], // 第一个条件
+        ...requestData.slice(1).sort((a, b) => a.selectedItem.localeCompare(b.selectedItem)),
       ];
 
       if (this.selectedTerms.length === 0) {
@@ -312,11 +317,8 @@ export default {
         return;
       }
 
-      // 创建 conditions 的副本，并添加未选择的学期条件
-      const requestData = [
-        ...this.conditions.map(cond => ({ ...cond })), // 复制原始条件
-        ...excludedTermConditions // 添加未选择的学期条件
-      ].filter(cond => cond.selectedItem); // 过滤掉空条件
+      // 添加学期条件并过滤空条件
+      requestData = [...requestData, ...excludedTermConditions].filter(cond => cond.selectedItem || cond.searchWord);
 
       console.log('Request data:', requestData);
         // 发送 HTTP 请求到 Flask 后端
@@ -342,6 +344,7 @@ export default {
           .catch(error => {
             this.isLoading = false; // 停止加载数据
             this.isError = true;
+            this.msg= '后端服务器未响应，请稍后再试';
             console.error('Error:', error);
           });
       },      
@@ -373,6 +376,7 @@ export default {
       })
       .catch(error => {
         console.error('Error fetching terms:', error);
+        this.msg= '后端服务器未响应，请稍后再试';
         this.isError = true;
         this.isLoading = false; // 停止加载数据
       });
@@ -412,6 +416,7 @@ export default {
       })
       .catch(error => {
         console.error('Error fetching searchable fields:', error);
+        this.msg= '后端服务器未响应，请稍后再试';
         this.isError = true;
         this.isLoading = false; // 停止加载数据
       });

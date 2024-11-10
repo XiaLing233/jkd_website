@@ -1,5 +1,5 @@
 <template>
-    <div id="contactbody">
+    <div id="contactbody" style="margin: 20px">
         <el-card shadow="never">
             <h1>友情链接</h1>
         <el-divider />

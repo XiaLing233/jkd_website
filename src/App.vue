@@ -1,17 +1,14 @@
 <template>
-    <div id="app" style="width: 100%; height: 100%">
         <Header />
         
-        <el-main>
+        <el-main style="padding: 0px; margin: 0px">
             <router-view />
         </el-main>
         
         <Footer />
-    </div>
-
 </template>
 
-<style scoped>
+<style>
     * {
         font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC',
   'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;

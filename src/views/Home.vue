@@ -1,5 +1,5 @@
 <template>
-<el-card id="introbody" shadow="never">
+<el-card id="introbody" shadow="never" style="margin: 20px">
     <div id="heading">
         <h1 id='页面介绍'>页面介绍</h1>
         </div>
