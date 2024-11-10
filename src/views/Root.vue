@@ -20,7 +20,7 @@
     }
 
     .welcome-container {
-        background-image: url('../assets/welcome_bg_1.jpg');
+        background-image: url('../assets/welcome_bg_2.png');
         /* background-image: url('../assets/welcome_bg.png'); */
         background-size: cover;
         background-position: center;
@@ -30,8 +30,8 @@
 
     #wel-box {
         float: right; 
-        margin-top: 7%;
-        margin-right: 7%;
+        margin-top: 5%;
+        margin-right: 8%;
         background-color: rgba(0, 0, 0, 0.4); 
         backdrop-filter: blur(20px);
         border-radius: 4px;
