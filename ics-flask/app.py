@@ -48,68 +48,82 @@ def get_searchable_fields():
 
     response_data['data'] = fields
     response_data['message'] = "获取字段成功！"
-    response_data['status'] = 200
+    response_data['status'] = 'OK'
 
     return jsonify(response_data), 200
 
 # 有一些字段，提供给用户下拉菜单选择
 @app.route('/api/get_field_options', methods=['POST'])
 def get_field_options():
-    data = request.json # 获取请求的 JSON 数据
-    field_name = data.get('field_name') # 获取字段名
-    select_term = data.get('select_term') # 获取学期
+    data = request.json  # 获取请求的 JSON 数据
+    field_name = data.get('field_name')  # 获取字段名
+    select_term = data.get('select_term')  # 获取学期
 
     # 连接数据库，查询字段的可选值
-    conn = mysql.connector.connect(**db_config) # 连接数据库
-    cursor = conn.cursor() # 创建游标
+    conn = mysql.connector.connect(**db_config)  # 连接数据库
+    cursor = conn.cursor()  # 创建游标
 
     # 构建学期的 LIKE 语句
-    term_like = "(学期 LIKE "
-    for term in select_term:
-        # 第一个
-        if term == select_term[0]:
-            term_like += f"'{term}'"
-        else:
-            term_like += f" OR 学期 LIKE '{term}'"
-    
-    term_like += ")"
+    term_like = " OR ".join(["学期 LIKE %s" for _ in select_term])
+    term_like = f"({term_like})"
+    term_params = [f"%{term}%" for term in select_term]
+
+    print(term_like)
 
     # 根据字段名查询不同的表
-    if field_name == '校区': # 如果字段名是“校区”
-        query = "SELECT DISTINCT 校区 FROM course_all" # 查询 course_all 表的校区字段
+    if field_name == '校区':  # 如果字段名是“校区”
+        query = "SELECT DISTINCT 校区 FROM course_all"
+        params = []
     elif field_name == '开课学院':
         query = "SELECT DISTINCT 开课学院 FROM course_all"
+        params = []
     elif field_name == '课程性质':
+        if (term_like == "()"): # 鬼知道还有人不选学期？没错，就是我！
+            response_data['message'] = "空"
+            response_data['data'] = []
+            response_data['status'] = 'OK'
+            return jsonify(response_data), 200  # 返回空数组，如果没有匹配的字段
         query = f"SELECT DISTINCT 课程性质 FROM course_all WHERE {term_like}"
+        params = term_params
     elif field_name == '听课专业':
+        if (term_like == "()"):
+            response_data['message'] = "空"
+            response_data['data'] = []
+            response_data['status'] = 'OK'
+            return jsonify(response_data), 200  # 返回空数组，如果没有匹配的字段
         query = f"SELECT DISTINCT 听课专业 FROM course_all WHERE {term_like} ORDER BY SUBSTRING(听课专业, 1, 4) DESC"
+        params = term_params
     else:
         response_data['message'] = "空"
         response_data['data'] = []
-        response_data['status'] = 200
-        return jsonify(response_data), 200 # 返回空数组，如果没有匹配的字段
+        response_data['status'] = 'OK'
+        return jsonify(response_data), 200  # 返回空数组，如果没有匹配的字段
 
-    print(query) # 打印查询语句
+    print(query)  # 打印查询语句
 
-    cursor.execute(query) # 执行查询
-    options = [row[0] for row in cursor.fetchall()] # 获取查询结果
-
-    # print(options)
+    cursor.execute(query, params)  # 执行查询
+    options = [row[0] for row in cursor.fetchall()]  # 获取查询结果
 
     if field_name == '听课专业':
         options = get_unique_majors(options)
-    
-    cursor.close() # 关闭游标
-    conn.close() # 关闭数据库连接
+
+    cursor.close()  # 关闭游标
+    conn.close()  # 关闭数据库连接
 
     # 排除空的 options
     options = [option for option in options if option]
 
-    # print(options)
-
-    response_data['data'] = options
-    response_data['message'] = "获取字段成功！"
-    response_data['status'] = 200
+    # 如果个数多于 800 个，只返回前 800 个，并且给出 warning
+    print(len(options))
+    if len(options) > 800:
+        options = options[:800]
+        response_data['message'] = "听课专业过多，为了保证浏览体验，只返回了前 800 个，可能漏掉某些专业。建议缩小检索的学期范围。"
+        response_data['status'] = 'WARNING'
+        response_data['data'] = options
+    else:
+        response_data['data'] = options
+        response_data['message'] = "获取字段成功！"
+        response_data['status'] = 'OK'
 
     return jsonify(response_data), 200
 
@@ -127,7 +141,7 @@ def get_terms():
 
     response_data['data'] = options
     response_data['message'] = "获取学期成功！"
-    response_data['status'] = 200
+    response_data['status'] = 'OK'
 
     return jsonify(response_data), 200
 
@@ -153,14 +167,14 @@ def search():
         except: # 字段名这一栏压根就不存在
             response_data['message'] = "字段名不能为空！"
             response_data['data'] = []
-            response_data['status'] = 400
+            response_data['status'] = 'ERROR'
             return jsonify(response_data), 400
         
         # 如果 field 为空，返回错误信息
         if not field:
             response_data['message'] = "字段名不能为空！"
             response_data['data'] = []
-            response_data['status'] = 400
+            response_data['status'] = 'ERROR'
             return jsonify(response_data), 400 # 返回错误信息
 
         try:
@@ -168,7 +182,7 @@ def search():
         except:# 关键词这一栏压根就不存在
             response_data['message'] = "搜索关键词不能为空！"
             response_data['data'] = []
-            response_data['status'] = 400
+            response_data['status'] = 'ERROR'
             return jsonify(response_data), 400 # 返回错误信息
         
         connector = condition.get('connector', '') # 获取连接词
@@ -176,25 +190,25 @@ def search():
         if field not in allowed_fields: # 如果字段名不在允许的字段列表中
             response_data['message'] = "非法字段！"
             response_data['data'] = []
-            response_data['status'] = 400
+            response_data['status'] = 'ERROR'
             return jsonify(response_data), 400 # 返回错误信息
         
         if not value: # 如果搜索关键词为空
             response_data['message'] = "搜索关键词不能为空！"
             response_data['data'] = []
-            response_data['status'] = 400
+            response_data['status'] = 'ERROR'
             return jsonify(response_data), 400 # 返回错误信息
         
         if connector and connector not in allowed_connectors: # 如果连接词存在，但不在允许的连接词列表中
             response_data['message'] = "非法连接词！"
             response_data['data'] = []
-            response_data['status'] = 400
+            response_data['status'] = 'ERROR'
             return jsonify(response_data), 400 # 返回错误信息
         
         if not connector and field_conditions: # 如果连接词不存在，并且临时条件列表不为空
             response_data['message'] = "连接词不能为空！"
             response_data['data'] = []
-            response_data['status'] = 400
+            response_data['status'] = 'ERROR'
             return jsonify(response_data), 400 # 返回错误信息
 
         if current_field is None:
@@ -244,7 +258,7 @@ def search():
                 if len(field_conditions) > 2:
                     response_data['message'] = "至少选择1个检索条件！不允许在不选择条件的情况下查看超过两个学期的课程喔！"
                     response_data['data'] = []
-                    response_data['status'] = 400
+                    response_data['status'] = 'ERROR'
                     return jsonify(response_data), 400
                 else:
                     query_conditions.append(f"({' '.join(field_conditions)})")
@@ -288,7 +302,7 @@ def search():
 
     response_data['data'] = results
     response_data['message'] = "检索成功！"
-    response_data['status'] = 200
+    response_data['status'] = 'OK'
 
     return jsonify(response_data), 200
 

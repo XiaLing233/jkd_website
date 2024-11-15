@@ -73,6 +73,7 @@
                   allow-create
                   clearable
                   style="width: 200px;"
+                  :loading="loading_field"
                 >
                   <el-option 
                     v-for="option in condition.options" 
@@ -173,7 +174,7 @@
             <el-button type="primary" @click="isError = false">确定</el-button>
           </div>
         </template> 
-      </el-dialog>
+      </el-dialog>  
   </div>
 
   <div
@@ -185,6 +186,8 @@
 </template>
 
 <script>
+import { ElNotification } from 'element-plus';
+
 export default {
   data() {
     return {
@@ -213,6 +216,7 @@ export default {
       // 加载状态
       isLoading: false, // 是否正在加载数据
       isError: false,
+      isWarning: false,
       msg: '',
 
       // 以下是新 UI
@@ -259,6 +263,7 @@ export default {
       const fieldName = this.conditions[index].selectedItem; // 获取当前条件的字段名
       const selectTerm = this.selectedTerms; // 获取当前选择的学期
       this.loading_field = true; // 开始加载数据
+      console.log(this.loading_field)
 
       // 请求字段的选项数据
       fetch('/api/get_field_options', {
@@ -272,7 +277,12 @@ export default {
         .then(data => {
           // 更新当前条件的可选项
           this.conditions[index].options = data['data']; // 直接赋值，Vue 3 支持响应式
-          data['status'] === 400 ? this.isError = true : this.isError = false;
+          data['status'] === 'ERROR' ? this.isError = true : this.isError = false;
+          data['status'] === 'WARNING' ? this.isWarning = true : this.isWarning = false;
+          console.log('status:', data['status']);
+          console.log('isWarning:', this.isWarning);
+          this.msg = data['message'];
+          this.loading_field = false; // 停止加载数据
         })
         .catch(error => {
           console.error('Error fetching field options:', error);
@@ -280,9 +290,11 @@ export default {
           this.msg= '后端服务器未响应，请稍后再试';
           // 把 options 设置为空数组
           this.conditions[index].options = [];
+          this.loading_field = false; // 停止加载数据
         });
 
-      this.loading_field = false; // 停止加载数据
+
+      console.log(this.loading_field)
     },
 
     updateConditionsWithSelectedTerms() {
@@ -336,7 +348,7 @@ export default {
             this.searchResults = data['data'];
             this.msg = data['message'];
             console.log('Search results:', data['data']);
-            data['status'] === 400 ? this.isError = true : this.isError = false;
+            data['status'] === 'ERROR' ? this.isError = true : this.isError = false;
           })
           .then(() => {
             this.currentPage = 1; // 重置页码
@@ -372,7 +384,7 @@ export default {
         }
 
         this.isLoading = false; // 停止加载数据
-        data['status'] === 400 ? this.isError = true : this.isError = false;
+        data['status'] === 'ERROR' ? this.isError = true : this.isError = false;
       })
       .catch(error => {
         console.error('Error fetching terms:', error);
@@ -402,6 +414,22 @@ export default {
     },
   },
 
+  watch: {
+    isWarning(newVal) {
+      if (newVal) {
+        ElNotification({
+          title: '提示',
+          message: this.msg,
+          type: 'warning',
+          duration: 0,
+          onClose: () => {
+            this.isWarning = false;
+          },
+      })
+      }
+    }
+  },
+
   mounted() {
     // 获取所有可检索的字段
     this.isLoading = true; // 开始加载数据
@@ -412,7 +440,7 @@ export default {
         this.isLoading = false; // 停止加载数据
         this.msg = data['message'];
 
-        data['status'] === 400 ? this.isError = true : this.isError = false;
+        data['status'] === 'ERROR' ? this.isError = true : this.isError = false;
       })
       .catch(error => {
         console.error('Error fetching searchable fields:', error);
