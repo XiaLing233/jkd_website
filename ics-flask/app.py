@@ -36,7 +36,7 @@ def get_unique_majors(result):
     # 按照字段的前四位年份降序排序
     unique_majors = sorted(list(unique_majors), key=lambda x: x[:4], reverse=True)
 
-    return list(unique_majors)
+    return list(unique_majors) # 不返回状态码，因为不是 HTTP 请求的返回
 
 # 以下是 Flask 的路由函数
 
@@ -47,10 +47,10 @@ def get_searchable_fields():
     fields = ["课程序号", "课程名称", "授课教师", "教师工号", "课程性质", "校区", "开课学院", "排课信息", "听课专业"]
 
     response_data['data'] = fields
-    response_data['status'] = 200
     response_data['message'] = "获取字段成功！"
+    response_data['status'] = 200
 
-    return jsonify(response_data)
+    return jsonify(response_data), 200
 
 # 有一些字段，提供给用户下拉菜单选择
 @app.route('/api/get_field_options', methods=['POST'])
@@ -85,9 +85,9 @@ def get_field_options():
         query = f"SELECT DISTINCT 听课专业 FROM course_all WHERE {term_like} ORDER BY SUBSTRING(听课专业, 1, 4) DESC"
     else:
         response_data['message'] = "空"
-        response_data['status'] = 200
         response_data['data'] = []
-        return jsonify(response_data) # 返回空数组，如果没有匹配的字段
+        response_data['status'] = 200
+        return jsonify(response_data), 200 # 返回空数组，如果没有匹配的字段
 
     print(query) # 打印查询语句
 
@@ -108,10 +108,10 @@ def get_field_options():
     # print(options)
 
     response_data['data'] = options
-    response_data['status'] = 200
     response_data['message'] = "获取字段成功！"
+    response_data['status'] = 200
 
-    return jsonify(response_data)
+    return jsonify(response_data), 200
 
 @app.route('/api/get_terms', methods=['GET'])
 def get_terms():
@@ -126,10 +126,10 @@ def get_terms():
     conn.close() # 关闭数据库连接
 
     response_data['data'] = options
-    response_data['status'] = 200
     response_data['message'] = "获取学期成功！"
+    response_data['status'] = 200
 
-    return jsonify(response_data)
+    return jsonify(response_data), 200
 
 
 # 搜索功能
@@ -138,6 +138,7 @@ def search():
     conditions = request.json # 获取请求的 JSON 数据
     # 构建查询条件
     query_conditions = []
+    query_params = []
     current_field = None
     field_conditions = []
     first_connector = "Empty"  # 第一个连接词
@@ -145,98 +146,56 @@ def search():
     # 黑白名单
     allowed_fields = ["学期", "课程序号", "课程名称", "授课教师", "教师工号", "课程性质", "校区", "开课学院", "排课信息", "听课专业"]
     allowed_connectors = ["AND", "OR", "NOT"] # 允许的连接词
-    blacklist_searchWord = [
-    "SELECT",    # 查询数据
-    "INSERT",    # 插入数据
-    "UPDATE",    # 更新数据
-    "DELETE",    # 删除数据
-    "CREATE",    # 创建数据库或表
-    "DROP",      # 删除数据库或表
-    "ALTER",     # 修改数据库或表结构
-    "TRUNCATE",  # 清空表数据
-    "GRANT",     # 授权权限
-    "REVOKE",    # 撤销权限
-    "COMMIT",    # 提交事务
-    "ROLLBACK",  # 回滚事务
-    "USE",       # 选择数据库
-    "FROM",      # 用于指定表名
-    "WHERE",     # 用于条件过滤
-    "JOIN",      # 用于连接多个表
-    "ON",        # 用于连接条件
-    "AND",       # 逻辑与
-    "OR",        # 逻辑或
-    "NOT",       # 逻辑非
-    "LIKE",      # 模糊匹配
-    "IN",        # 用于指定多个值
-    "BETWEEN",   # 用于范围查询
-    "HAVING",    # 用于聚合条件
-    "ORDER BY",  # 用于排序
-    "GROUP BY",  # 用于分组
-    "LIMIT",     # 用于限制结果集
-    "OFFSET",    # 用于分页
-    "UNION",     # 用于合并多个结果集
-    "EXCEPT",    # 用于除去重复的结果
-    "INTERSECT", # 用于交集
-    "WITH",      # 公共表表达式
-    "CASE",      # 用于条件表达式
-    "WHEN",      # 用于条件判断
-    "THEN",      # 用于条件判断
-    "ELSE",      # 用于条件判断
-    "END",        # 结束条件表达式
-    ";",         # 分号
-    "'",         # 单引号
-    "\"",        # 双引号
-    "--",        # 注释
-    "/*",        # 注释
-    "%",         # 用于模糊匹配
-    "_",         # 用于模糊匹配
-]
-    
 
     for condition in conditions: # 遍历所有查询条件
-        field = condition['selectedItem'] # 获取字段名
+        try:
+            field = condition['selectedItem'] # 获取字段名
+        except: # 字段名这一栏压根就不存在
+            response_data['message'] = "字段名不能为空！"
+            response_data['data'] = []
+            response_data['status'] = 400
+            return jsonify(response_data), 400
+        
+        # 如果 field 为空，返回错误信息
+        if not field:
+            response_data['message'] = "字段名不能为空！"
+            response_data['data'] = []
+            response_data['status'] = 400
+            return jsonify(response_data), 400 # 返回错误信息
+
         try:
             value = condition['searchWord'] # 获取搜索关键词
-        except:
+        except:# 关键词这一栏压根就不存在
             response_data['message'] = "搜索关键词不能为空！"
-            response_data['status'] = 400
             response_data['data'] = []
+            response_data['status'] = 400
             return jsonify(response_data), 400 # 返回错误信息
         
         connector = condition.get('connector', '') # 获取连接词
 
         if field not in allowed_fields: # 如果字段名不在允许的字段列表中
             response_data['message'] = "非法字段！"
-            response_data['status'] = 400
             response_data['data'] = []
+            response_data['status'] = 400
             return jsonify(response_data), 400 # 返回错误信息
         
         if not value: # 如果搜索关键词为空
             response_data['message'] = "搜索关键词不能为空！"
-            response_data['status'] = 400
             response_data['data'] = []
+            response_data['status'] = 400
             return jsonify(response_data), 400 # 返回错误信息
         
         if connector and connector not in allowed_connectors: # 如果连接词存在，但不在允许的连接词列表中
             response_data['message'] = "非法连接词！"
-            response_data['status'] = 400
             response_data['data'] = []
+            response_data['status'] = 400
             return jsonify(response_data), 400 # 返回错误信息
         
         if not connector and field_conditions: # 如果连接词不存在，并且临时条件列表不为空
             response_data['message'] = "连接词不能为空！"
-            response_data['status'] = 400
             response_data['data'] = []
+            response_data['status'] = 400
             return jsonify(response_data), 400 # 返回错误信息
-
-        value_upper = value.upper() # 转换为大写
-
-        for word in blacklist_searchWord:
-            if word in value_upper:
-                response_data['message'] = "非法关键词！"
-                response_data['status'] = 400
-                response_data['data'] = []
-                return jsonify(response_data) # 返回错误信息
 
         if current_field is None:
             current_field = field
@@ -245,114 +204,93 @@ def search():
         if field != current_field:
             # 将当前字段的条件括起来，并添加到查询条件列表中
             if field_conditions:
-                 # 如果是学期，加 AND
                 if current_field == "学期":
                     query_conditions.append(f"AND ({' '.join(field_conditions)})")
-                    print("学期")
                 else:
-                    # 如果 first_connector 为 NOT
                     if first_connector == "NOT":
-                        # 如果是第一个条件，不加 AND
                         if not query_conditions:
-                            print("第一个条件")
                             query_conditions.append(f"({' '.join(field_conditions)})")
                         else:
-                            print(first_connector)
                             query_conditions.append(f"AND ({' '.join(field_conditions)})")
                     else:
                         query_conditions.append(f"{first_connector} ({' '.join(field_conditions)})")
-            # 更新当前字段，并清空临时条件列表
             current_field = field
             field_conditions = []
             first_connector = connector  # 更新新的字段的第一个连接词
 
         # 构建单个条件
-        # 如果是 NOT
         if connector == "NOT":
-            field_condition = f"AND {field} NOT LIKE '%{value}%'"
-            # 如果是第一个条件，不加 AND
-            if not field_conditions: # 区分好 field_conditions 和 query_conditions!
-                field_condition = f"{field} NOT LIKE '%{value}%'"
+            field_condition = f"AND {field} NOT LIKE %s"
+            if not field_conditions:
+                field_condition = f"{field} NOT LIKE %s"
         else:
-            field_condition = f"{connector} {field} LIKE '%{value}%'"
+            field_condition = f"{connector} {field} LIKE %s"
 
-        if not field_conditions:  # 第一个条件不加 connector
-            # 如果是 NOT
+        if not field_conditions:
             if connector == "NOT":
-                field_condition = f"{field} NOT LIKE '%{value}%'"
+                field_condition = f"{field} NOT LIKE %s"
             else:
-                field_condition = f"{field} LIKE '%{value}%'"
+                field_condition = f"{field} LIKE %s"
 
-        # 将条件添加到临时列表中
         field_conditions.append(field_condition)
+        query_params.append(f"%{value}%")
 
-        # 对于第一个条件，记录连接词并重置为下一次使用
         if first_connector == "Empty":
             first_connector = connector
 
-    # 添加最后一个字段的条件
-    print(first_connector)
     if field_conditions:
-        # 如果是学期，加 AND
         if current_field == "学期":
-            # 如果选择的学期超过两个，并且学期是第一个条件（说明没有选择条件），返回错误信息
             if not query_conditions:
-                if len(field_conditions) > 2: # 说明没有选择条件
-                    # 返回错误信息，中间有换行符
-
+                if len(field_conditions) > 2:
                     response_data['message'] = "至少选择1个检索条件！不允许在不选择条件的情况下查看超过两个学期的课程喔！"
-                    response_data['status'] = 400
                     response_data['data'] = []
+                    response_data['status'] = 400
                     return jsonify(response_data), 400
                 else:
                     query_conditions.append(f"({' '.join(field_conditions)})")
             else:
                 query_conditions.append(f"AND ({' '.join(field_conditions)})")
-            print("学期")
         else:
-            # 如果 first_connector 为 NOT
             if first_connector == "NOT":
-                # 如果是第一个条件，不加 AND，因为只有可能 OR 是第一个条件
                 if not query_conditions:
-                    print("第一个条件")
                     query_conditions.append(f"{' '.join(field_conditions)}")
                 else:
-                    print(first_connector)
                     query_conditions.append(f"AND ({' '.join(field_conditions)})")
             else:
                 query_conditions.append(f"{first_connector} ({' '.join(field_conditions)})")
 
-    # 生成 SQL 查询语句
-    where_clause = ' '.join(query_conditions)  # 使用空格连接所有字段的查询条件
-    query = f"SELECT * FROM course_all WHERE {where_clause} ORDER BY `学期` ASC, `课程序号` ASC"  # 查询 course_all 表
+    # For Debugging Purpose
+    print(query_conditions)
+    print(query_params)
 
 
-    print(query) # 打印查询语句
+    where_clause = ' '.join(query_conditions)
+    query = f"SELECT * FROM course_all WHERE {where_clause} ORDER BY `学期` ASC, `课程序号` ASC"
 
-    conn = mysql.connector.connect(**db_config) # 连接数据库
-    cursor = conn.cursor() # 创建游标
+    # For Debugging Purpose
+    print(query)
+
+    conn = mysql.connector.connect(**db_config)
+    cursor = conn.cursor()
     try:
-        cursor.execute(query) # 执行查询
-        results = cursor.fetchall() # 获取查询结果
+        cursor.execute(query, query_params)
+        results = cursor.fetchall()
     except Exception as e:
         response_data['message'] = "检索出错啦！<br>生成的 SQL 语句为：<br>" + query
-        response_data['status'] = 400
         response_data['data'] = []
-        return jsonify(response_data), 400
+        response_data['status'] = 500
+        return jsonify(response_data), 500
 
-    # 给返回的 results 添加字段名
     results = [dict(zip(cursor.column_names, row)) for row in results]
 
-    cursor.close() # 关闭游标
-    conn.close()    # 关闭数据库连接
-
-    # 返回查询结果
+    cursor.close()
+    conn.close()
 
     response_data['data'] = results
-    response_data['status'] = 200
     response_data['message'] = "检索成功！"
+    response_data['status'] = 200
 
-    return jsonify(response_data) # 返回 JSON 格式的查询结果
+    return jsonify(response_data), 200
 
 
 if __name__ == '__main__': # 如果当前脚本被直接运行
