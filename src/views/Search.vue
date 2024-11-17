@@ -155,7 +155,7 @@
     </div>
 
     <div v-else-if="searchResults.length === 0">
-      <img src="../assets/notfound.png" alt="No data" style="display: block; margin: 0 auto; width: 25%; height: auto;" />
+      <img src="../assets/notfound.webp" alt="No data" style="display: block; margin: 0 auto; width: 25%; height: auto;" />
     </div>
      </el-card>
 

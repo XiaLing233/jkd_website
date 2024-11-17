@@ -117,7 +117,7 @@ def get_field_options():
     print(len(options))
     if len(options) > 800:
         options = options[:800]
-        response_data['message'] = "听课专业过多，为了保证浏览体验，只返回了前 800 个，可能漏掉某些专业。建议缩小检索的学期范围。"
+        response_data['message'] = "%s过多，为了保证浏览体验，只返回了前 800 个，可能漏掉某些字段。建议缩小检索的学期范围，或者先选定一个学期，找到目标后进一步检索。" % field_name
         response_data['status'] = 'WARNING'
         response_data['data'] = options
     else:

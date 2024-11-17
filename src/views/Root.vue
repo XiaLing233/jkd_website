@@ -20,7 +20,7 @@
     }
 
     .welcome-container {
-        background-image: url('../assets/welcome_bg_2.png');
+        background-image: url('../assets/welcome_bg_2.webp');
         /* background-image: url('../assets/welcome_bg.png'); */
         background-size: cover;
         background-position: center;
