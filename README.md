@@ -1,29 +1,13 @@
-# ics-blank
+# 计科导大作业文件结构说明
 
-This template should help get you started developing with Vue 3 in Vite.
+## vue 前端
 
-## Recommended IDE Setup
+我需要完成的绝大部分内容存放在了 /src 下
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+其中，/src/router/ 存放了路由配置文件；/src/views/ 存放了 vue 的三段式文件；/src/assets/ 存放了图片资源。其余文件夹暂时没有投入使用。
 
-## Customize configuration
+## flask 后端
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+它是一个独立文件夹，在 /src/ics-flask/ 下。其中的 `app.py` 是编写的配置文件。
 
-## Project Setup
-
-```sh
-npm install
-```
-
-### Compile and Hot-Reload for Development
-
-```sh
-npm run dev
-```
-
-### Compile and Minify for Production
-
-```sh
-npm run build
-```
+注：`app.py` 中数据库的用户名和密码已略去，而且其实服务器上使用的用户名和密码也不是这个。

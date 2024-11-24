@@ -10,8 +10,8 @@ CORS(app) # 允许跨域请求
 # MySQL 数据库配置
 db_config = {
     'host': 'localhost',      # 数据库主机地址，通常是 'localhost' 或远程服务器 IP
-    'user': 'root',  # 连接数据库的用户名
-    'password': 'PNxe3LuNCjx9LT*',  # 用户对应的密码
+    'user': 'foo',  # 连接数据库的用户名
+    'password': 'bar',  # 用户对应的密码
     'database': 'curriculum',    # 数据库名
     'port': 3306,             # MySQL 服务的端口号，默认为 3306
     'charset': 'utf8mb4',     # 字符集设置，保证支持中文等多语言字符
