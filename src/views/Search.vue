@@ -117,6 +117,7 @@
         <el-checkbox v-model="showMajor" label="听课专业" />
         <el-checkbox v-model="showSchedule" label="排课信息" />
         <el-checkbox v-model="showDepartment" label="开课学院" />
+        <el-checkbox v-model="showStudentNumber" label="选课人数" />
       </div>
 
       <el-table
@@ -139,6 +140,7 @@
         <el-table-column v-if="showMajor" prop="听课专业" label="听课专业"></el-table-column>
         <el-table-column v-if="showSchedule" prop="排课信息" label="排课信息"></el-table-column>
         <el-table-column v-if="showDepartment" prop="开课学院" label="开课学院"></el-table-column>
+        <el-table-column v-if="showStudentNumber" prop="选课人数" label="选课人数"></el-table-column>
       </el-table>
 
       <!-- 分页控制 -->
@@ -208,6 +210,7 @@ export default {
       showMajor: false, // 是否显示听课专业
       showSchedule: true, // 是否显示排课信息
       showDepartment: true, // 是否显示开课学院
+      showStudentNumber: true, // 是否显示选课人数
 
       // 页码控制
       currentPage: 1, // 当前页码
