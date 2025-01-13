@@ -1,20 +1,63 @@
 from flask import Flask, request, jsonify
 import mysql.connector
+from flask_limiter import Limiter # 限制请求频率
+from flask_limiter.util import get_remote_address # 获取远程地址，用于限制请求频率
 from flask_cors import CORS  # 导入 CORS
+import configparser
+import logging # 日志
+import os
+from datetime import datetime
+import redis # 导入 Redis
 
 app = Flask(__name__)
 
 CORS(app) # 允许跨域请求
 
+# 读取配置文件
+CONFIG = configparser.ConfigParser()
+CONFIG.read('config.ini')
+
+# 设置数据库连接
+DB_HOST = CONFIG['database']['host']
+DB_USER_READ_ONLY = CONFIG['database']['user-read-only']
+DB_PASSWORD_READ_ONLY = CONFIG['database']['password-read-only']
+DB_DATABASE = CONFIG['database']['database']
+DB_PORT = int(CONFIG['database']['port'])
+DB_CHARSET = CONFIG['database']['charset']
+
+# 设置表格名称
+TABLE_NAME = CONFIG['table']['name']
+TABLE_MAJOR = CONFIG['table']['major']
+TABLE_TERM = CONFIG['table']['term']
+TABLE_CID = CONFIG['table']['course-id']
+TABLE_PROPERTY = CONFIG['table']['property']
+TABLE_CAMPUS = CONFIG['table']['campus']
+TABLE_SCHOOL = CONFIG['table']['school']
+
+# 日志
+INFO_ADDR = CONFIG['log']['info_addr']
+ENCODING = CONFIG['log']['encoding']
+
+# 配置 Redis
+REDIS_CLIENT  = redis.StrictRedis(host='localhost', port=6379, db=0)
+
+# 限制请求频率
+LIMITER = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=["10 per minute"],
+    storage_uri="redis://localhost:6379/0" # 使用 Redis 作为存储，本地测试不要用这个，因为要装 Redis
+)
+
 # 配置 MySQL 数据库连接
 # MySQL 数据库配置
 db_config = {
-    'host': 'localhost',      # 数据库主机地址，通常是 'localhost' 或远程服务器 IP
-    'user': 'root',  # 连接数据库的用户名
-    'password': 'PNxe3LuNCjx9LT*',  # 用户对应的密码
-    'database': 'curriculum',    # 数据库名
-    'port': 3306,             # MySQL 服务的端口号，默认为 3306
-    'charset': 'utf8mb4',     # 字符集设置，保证支持中文等多语言字符
+    'host': DB_HOST,
+    'user': DB_USER_READ_ONLY,
+    'password': DB_PASSWORD_READ_ONLY,
+    'database': DB_DATABASE,
+    'port': DB_PORT,
+    'charset': DB_CHARSET
 }
 
 # 返回体格式
@@ -23,6 +66,32 @@ response_data = {
     "status": 200,
     "data": []
 }
+
+# 配置日志
+def setup_logger():
+    # 确保日志目录存在
+    os.makedirs(INFO_ADDR, exist_ok=True)
+    
+    # 主日志配置
+    logger = logging.getLogger('main')
+    logger.setLevel(logging.INFO)
+    
+    # 日常日志文件
+    daily_handler = logging.FileHandler(
+        f'{INFO_ADDR}{datetime.now().strftime("%Y-%m-%d")}.log',
+        encoding = ENCODING
+    )
+    daily_handler.setLevel(logging.INFO)
+    
+    # 设置日志格式
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s\n%(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    daily_handler.setFormatter(formatter)
+    
+    logger.addHandler(daily_handler)
+    return logger
+
+# 设置日志
+LOGGER = setup_logger()
 
 # 去重函数
 def get_unique_majors(result):
@@ -64,7 +133,7 @@ def get_field_options():
     cursor = conn.cursor()  # 创建游标
 
     # 构建学期的 LIKE 语句
-    term_like = " OR ".join(["学期 LIKE %s" for _ in select_term])
+    term_like = " OR ".join([f"{ TABLE_TERM } LIKE %s" for _ in select_term])
     term_like = f"({term_like})"
     term_params = [f"%{term}%" for term in select_term]
 
@@ -72,10 +141,10 @@ def get_field_options():
 
     # 根据字段名查询不同的表
     if field_name == '校区':  # 如果字段名是“校区”
-        query = "SELECT DISTINCT 校区 FROM course_all"
+        query = f"SELECT DISTINCT { TABLE_CAMPUS } FROM { TABLE_NAME }"
         params = []
     elif field_name == '开课学院':
-        query = "SELECT DISTINCT 开课学院 FROM course_all"
+        query = f"SELECT DISTINCT { TABLE_SCHOOL } FROM { TABLE_NAME }"
         params = []
     elif field_name == '课程性质':
         if (term_like == "()"): # 鬼知道还有人不选学期？没错，就是我！
@@ -83,7 +152,7 @@ def get_field_options():
             response_data['data'] = []
             response_data['status'] = 'OK'
             return jsonify(response_data), 200  # 返回空数组，如果没有匹配的字段
-        query = f"SELECT DISTINCT 课程性质 FROM course_all WHERE {term_like}"
+        query = f"SELECT DISTINCT { TABLE_PROPERTY } FROM { TABLE_NAME } WHERE {term_like}"
         params = term_params
     elif field_name == '听课专业':
         if (term_like == "()"):
@@ -91,7 +160,7 @@ def get_field_options():
             response_data['data'] = []
             response_data['status'] = 'OK'
             return jsonify(response_data), 200  # 返回空数组，如果没有匹配的字段
-        query = f"SELECT DISTINCT 听课专业 FROM course_all WHERE {term_like} ORDER BY SUBSTRING(听课专业, 1, 4) DESC"
+        query = f"SELECT DISTINCT { TABLE_MAJOR } FROM { TABLE_NAME } WHERE {term_like} ORDER BY SUBSTRING({ TABLE_MAJOR }, 1, 4) DESC"
         params = term_params
     else:
         response_data['message'] = "空"
@@ -132,7 +201,7 @@ def get_terms():
     conn = mysql.connector.connect(**db_config) # 连接数据库
     cursor = conn.cursor()
 
-    cursor.execute("SELECT DISTINCT 学期 FROM course_all ORDER BY 学期 ASC") # 查询 course_all 表的学期字段
+    cursor.execute(f"SELECT DISTINCT { TABLE_TERM } FROM { TABLE_NAME } ORDER BY { TABLE_TERM } ASC") # 查询 course_all 表的学期字段
     # 获取不为空的学期
     options = [row[0] for row in cursor.fetchall() if row[0] != ''] # 获取查询结果
 
@@ -149,6 +218,12 @@ def get_terms():
 # 搜索功能
 @app.route('/api/search', methods=['POST'])
 def search():
+    # 打印用户的 IP 地址
+    print(get_remote_address())
+
+    # 写入日志
+    LOGGER.info(f"IP 地址：{get_remote_address()} 的用户进行了检索。检索的条件为：{request.json}\n")
+
     conditions = request.json # 获取请求的 JSON 数据
     # 构建查询条件
     query_conditions = []
@@ -279,7 +354,7 @@ def search():
 
 
     where_clause = ' '.join(query_conditions)
-    query = f"SELECT * FROM course_all WHERE {where_clause} ORDER BY `学期` ASC, `课程序号` ASC"
+    query = f"SELECT * FROM { TABLE_NAME } WHERE {where_clause} ORDER BY { TABLE_TERM } ASC, { TABLE_CID } ASC"
 
     # For Debugging Purpose
     print(query)
@@ -307,5 +382,13 @@ def search():
     return jsonify(response_data), 200
 
 
+# 自定义 429 错误处理
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    response_data['message'] = "我就感觉到快！当前请求过多，请一会再试试吧~"
+    response_data['data'] = []
+    response_data['status'] = 'ERROR'
+    return jsonify(response_data), 429
+
 if __name__ == '__main__': # 如果当前脚本被直接运行
-    app.run(debug=True) # 启动 Flask 应用
+    app.run() # 启动 Flask 应用

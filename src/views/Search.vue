@@ -266,7 +266,7 @@ export default {
       const fieldName = this.conditions[index].selectedItem; // 获取当前条件的字段名
       const selectTerm = this.selectedTerms; // 获取当前选择的学期
       this.loading_field = true; // 开始加载数据
-      console.log(this.loading_field)
+      // console.log(this.loading_field)
 
       // 请求字段的选项数据
       fetch('/api/get_field_options', {
@@ -279,11 +279,12 @@ export default {
         .then(response => response.json()) // 解析 JSON 数据
         .then(data => {
           // 更新当前条件的可选项
+          console.log('Field options:', data['data']);
           this.conditions[index].options = data['data']; // 直接赋值，Vue 3 支持响应式
           data['status'] === 'ERROR' ? this.isError = true : this.isError = false;
           data['status'] === 'WARNING' ? this.isWarning = true : this.isWarning = false;
-          console.log('status:', data['status']);
-          console.log('isWarning:', this.isWarning);
+          // console.log('status:', data['status']);
+          // console.log('isWarning:', this.isWarning);
           this.msg = data['message'];
           this.loading_field = false; // 停止加载数据
         })
@@ -297,7 +298,7 @@ export default {
         });
 
 
-      console.log(this.loading_field)
+      // console.log(this.loading_field)
     },
 
     updateConditionsWithSelectedTerms() {
@@ -335,7 +336,7 @@ export default {
       // 添加学期条件并过滤空条件
       requestData = [...requestData, ...excludedTermConditions].filter(cond => cond.selectedItem || cond.searchWord);
 
-      console.log('Request data:', requestData);
+      // console.log('Request data:', requestData);
         // 发送 HTTP 请求到 Flask 后端
         fetch('/api/search', {
           method: 'POST',
