@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 import mysql.connector
 from flask_limiter import Limiter # 限制请求频率
-from flask_limiter.util import get_remote_address # 获取远程地址，用于限制请求频率
 from flask_cors import CORS  # 导入 CORS
 import configparser
 import logging # 日志
@@ -41,12 +40,21 @@ ENCODING = CONFIG['log']['encoding']
 # 配置 Redis
 REDIS_CLIENT  = redis.StrictRedis(host='localhost', port=6379, db=0)
 
+def get_client_ip():
+    # 首先检查是否有 X-Forwarded-For 头部
+    if 'X-Forwarded-For' in request.headers:
+        # 获取第一个 IP 地址（有可能是代理链中的第一个）
+        return request.headers.getlist('X-Forwarded-For')[0].split(',')[0] # 返回第一个 IP 地址，因为有 cloudflare 的代理，所以可能有多个 IP 地址
+    # 如果没有，使用 request.remote_addr 获取客户端的 IP 地址
+    return request.remote_addr
+
+
 # 限制请求频率
 LIMITER = Limiter(
-    key_func=get_remote_address,
+    key_func= get_client_ip,
     app=app,
-    default_limits=["10 per minute"],
-    storage_uri="redis://localhost:6379/0" # 使用 Redis 作为存储，本地测试不要用这个，因为要装 Redis
+    default_limits=["6 per minute"],
+    storage_uri="redis://localhost:6379/0"
 )
 
 # 配置 MySQL 数据库连接
@@ -118,6 +126,8 @@ def get_searchable_fields():
     response_data['data'] = fields
     response_data['message'] = "获取字段成功！"
     response_data['status'] = 'OK'
+
+    # print(request.headers.get('X-Forwarded-For'))
 
     return jsonify(response_data), 200
 
@@ -219,10 +229,10 @@ def get_terms():
 @app.route('/api/search', methods=['POST'])
 def search():
     # 打印用户的 IP 地址
-    print(get_remote_address())
+    print(get_client_ip())
 
     # 写入日志
-    LOGGER.info(f"IP 地址：{get_remote_address()} 的用户进行了检索。检索的条件为：{request.json}\n")
+    LOGGER.info(f"IP 地址：{get_client_ip()} 的用户进行了检索。检索的条件为：{request.json}\n")
 
     conditions = request.json # 获取请求的 JSON 数据
     # 构建查询条件
@@ -385,7 +395,7 @@ def search():
 # 自定义 429 错误处理
 @app.errorhandler(429)
 def ratelimit_handler(e):
-    response_data['message'] = "我就感觉到快！当前请求过多，请一会再试试吧~"
+    response_data['message'] = f"您当前的 IP 是：{get_client_ip() }<br>我就感觉到快！<br>当前请求过多，请一会再试试吧~"
     response_data['data'] = []
     response_data['status'] = 'ERROR'
     return jsonify(response_data), 429

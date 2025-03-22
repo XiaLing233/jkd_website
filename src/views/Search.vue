@@ -169,7 +169,7 @@
         width="500"
         draggable
         >
-        <span>{{ msg }}</span>
+        <div v-html="msg"></div>
 
         <template #footer>
           <div>
