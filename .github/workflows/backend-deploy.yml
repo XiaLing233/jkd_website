@@ -22,7 +22,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             set -e
-            cd /home/ubuntu/jkd-web/flask-backend
+            cd ~/jkd-web/flask-backend
             git fetch origin
             git reset --hard origin/main
             sudo systemctl restart flask-backend.service
