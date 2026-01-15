@@ -1,5 +1,5 @@
 <template>
-    <div id="searchbody" style="margin: 20px"> <!-- 搜索主体 -->
+    <div id="searchbody" style="margin: 20px;"> <!-- 搜索主体 -->
     <!-- 搜索条件 -->
      <el-card shadow="never" style="width: 100%; margin-bottom: 10px;">
       <template #header>
@@ -35,64 +35,106 @@
 
       <el-collapse-item name="condition">
         <template #title>
-          <el-icon class="el-icon--left"><Operation /></el-icon>逻辑条件
+          <el-icon class="el-icon--left"><Operation /></el-icon>检索条件
         </template>
-        <div style="display: flex; flex-wrap: wrap;">
-          <div v-for="(condition, index) in conditions" :key="index">
-            <!-- 显示连接符的下拉菜单（如果不是第一个条件） -->
-              <el-card shadow="hover" style="width: 550px">
-                <el-select 
-                  placeholder="连接符" 
-                  clearable 
-                  v-model="condition.connector"
-                  style="width: 100px"
-                  >
-                    <el-option v-if="index !== 0" value="AND">AND</el-option>
-                    <el-option v-if="index !== 0" value="OR">OR</el-option>
-                    <el-option value="NOT">NOT</el-option>
-                  </el-select>
-              
-
-                <!-- 选择字段的下拉菜单 -->
-                <el-select 
-                  v-model="condition.selectedItem" 
-                  placeholder="字段选择" 
-                  clearable 
-                  :loading="loading_field"
-                  style="width: 120px"
-                  > <!-- 当改变字段时，调用 fetchFieldOptions 方法 -->
-                  <el-option v-for="item in allItems" :key="item" :value="item">{{ item }}</el-option>  <!-- 可选字段 -->
-                </el-select>
-
-                <!-- 输入搜索词 -->
-                <el-select
-                  v-model="condition.searchWord"
-                  @focus="fetchFieldOptions(index)"
-                  placeholder="请输入搜索词"
-                  filterable
-                  allow-create
-                  clearable
-                  style="width: 200px;"
-                  :loading="loading_field"
-                >
-                  <el-option 
-                    v-for="option in condition.options" 
-                    :key="option" 
-                    :value="option">{{ option }}
-                  </el-option>
-                </el-select>
-
-                <el-button type="primary" @click="removeCondition(index)">移除条件</el-button> <!-- 移除条件按钮 -->
-              </el-card>
-              
-          </div>
-          </div>
         
-          <div style="margin: 15px 0 0 0">
-            <!-- <button @click="addCondition" :disabled="!canAddCondition" class="search-button">添加条件</button> 添加条件按钮 -->
-            <el-button type="primary" plain @click="addCondition">添加条件</el-button> <!-- 添加条件按钮 -->
-            <el-button type="primary" @click="submitSearch"><el-icon class="el-icon--left"><Search /></el-icon>搜索</el-button>   <!-- 搜索按钮 -->
-          </div>
+        <div class="search-tip" style="margin-bottom: 15px; padding: 10px; background-color: #f0f9ff; border-radius: 4px; font-size: 13px; color: #606266; display: flex; align-items: center;">
+          <el-icon class="el-icon--left"><InfoFilled /></el-icon>
+          <span>提示：<strong>条件组之间</strong>是 <el-tag size="small" type="primary">AND</el-tag> 关系，<strong>同一组内</strong>的条件是 <el-tag size="small" type="success">OR</el-tag> 关系。</span>
+        </div>
+
+        <div v-for="(group, groupIndex) in conditionGroups" :key="groupIndex" style="margin-bottom: 15px;">
+          <el-card shadow="hover">
+            <template #header>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-weight: bold;">
+                  <el-tag v-if="groupIndex > 0" type="primary" style="margin-right: 8px;">AND</el-tag>
+                  条件组 {{ groupIndex + 1 }}
+                  <el-tag type="success" size="small" style="margin-left: 8px;">组内 OR</el-tag>
+                </span>
+                <el-button type="danger" size="small" @click="removeGroup(groupIndex)" :disabled="conditionGroups.length === 1">
+                  删除组
+                </el-button>
+              </div>
+            </template>
+            
+            <div v-for="(condition, condIndex) in group.conditions" :key="condIndex" style="display: flex; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+              <!-- OR 标签（组内第二个条件开始显示） -->
+              <el-tag v-if="condIndex > 0" type="success" style="margin-right: 4px;">OR</el-tag>
+              
+              <!-- 选择字段 -->
+              <el-select 
+                v-model="condition.field" 
+                placeholder="选择字段" 
+                clearable 
+                style="width: 120px"
+              >
+                <el-option v-for="item in allItems" :key="item.field" :value="item.field">{{ item.field }}</el-option>
+              </el-select>
+
+              <!-- 匹配类型 -->
+              <el-select 
+                v-model="condition.matchType" 
+                style="width: 100px"
+              >
+                <el-option value="contains" label="包含"></el-option>
+                <el-option value="not_contains" label="不包含"></el-option>
+              </el-select>
+
+              <!-- 搜索词 - 根据字段类型动态切换 -->
+              <!-- 选项式字段 -->
+              <el-select
+                v-if="getFieldType(condition.field) === 'select'"
+                v-model="condition.value"
+                @focus="fetchFieldOptions(groupIndex, condIndex)"
+                placeholder="请输入搜索词"
+                filterable
+                allow-create
+                clearable
+                style="width: 200px;"
+                :loading="loading_field"
+              >
+                <el-option 
+                  v-for="option in condition.options" 
+                  :key="option" 
+                  :value="option">{{ option }}
+                </el-option>
+              </el-select>
+              <!-- 填写式字段 -->
+              <el-input
+                v-else
+                v-model="condition.value"
+                placeholder="请输入搜索词"
+                clearable
+                style="width: 200px;"
+              />
+
+              <!-- 删除条件按钮 -->
+              <el-button 
+                type="danger" 
+                :icon="DeleteIcon" 
+                circle 
+                size="small"
+                @click="removeCondition(groupIndex, condIndex)"
+                :disabled="group.conditions.length === 1"
+              />
+            </div>
+            
+            <!-- 添加条件按钮（组内） -->
+            <el-button type="success" plain size="small" @click="addConditionToGroup(groupIndex)">
+              <el-icon class="el-icon--left"><component :is="PlusIcon" /></el-icon>添加 OR 条件
+            </el-button>
+          </el-card>
+        </div>
+        
+        <div style="margin: 15px 0 0 0">
+          <el-button type="primary" plain @click="addGroup">
+            <el-icon class="el-icon--left"><component :is="PlusIcon" /></el-icon>添加 AND 条件组
+          </el-button>
+          <el-button type="primary" @click="submitSearch">
+            <el-icon class="el-icon--left"><Search /></el-icon>搜索
+          </el-button>
+        </div>
       </el-collapse-item>
       </el-collapse>
      </el-card>
@@ -110,38 +152,45 @@
         <div style="margin-right: 10px; padding-bottom: 2px; display: inline-flex"><el-icon class="el-icon--left"><Filter /></el-icon><el-text>显示列：</el-text></div>
         <el-checkbox v-model="showTerm" label="学期" />
         <el-checkbox v-model="showCourseNumber" label="课程序号" />
-        <el-checkbox v-model="showCourseName" label="课程名称" /> 
-        <el-checkbox v-model="showTeacher" label="授课教师（工号）" />
-        <el-checkbox v-model="showCourseType" label="课程性质" />
+        <el-checkbox v-model="showCourseName" label="课程名称" />
         <el-checkbox v-model="showCampus" label="校区" />
-        <el-checkbox v-model="showMajor" label="听课专业" />
-        <el-checkbox v-model="showSchedule" label="排课信息" />
         <el-checkbox v-model="showDepartment" label="开课学院" />
+        <el-checkbox v-model="showPeriod" label="总学时" />
+        <el-checkbox v-model="showCourseType" label="课程性质" />
+        <el-checkbox v-model="showAssessment" label="考核方式" />
+        <el-checkbox v-model="showTeacher" label="授课教师" />
+        <el-checkbox v-model="showSchedule" label="排课信息" />
+        <el-checkbox v-model="showMajor" label="听课专业" />
+        <el-checkbox v-model="showCapacity" label="额定人数" />
         <el-checkbox v-model="showStudentNumber" label="选课人数" />
       </div>
 
+      <div style="overflow-x: auto;">
       <el-table
         :data="paginatedData" 
         stripe 
         :header-cell-style= "{'text-align': 'center'}"
         :cell-style= "{'text-align': 'center'}"
         style="width: 100%;">
-        <el-table-column sortable v-if="showTerm" prop="学期" label="学期"></el-table-column>
-        <el-table-column sortable v-if="showCourseNumber" prop="课程序号" label="课程序号"></el-table-column>
-        <el-table-column v-if="showCourseName" prop="课程名称" label="课程名称"></el-table-column>
-         <!-- 使用 formatter 函数来格式化教师和工号的显示 -->
-        <el-table-column
-          v-if="showTeacher"
-          :formatter="formatTeachers"
-          label="授课教师（工号）"
-        ></el-table-column>
-        <el-table-column v-if="showCourseType" prop="课程性质" label="课程性质"></el-table-column>
-        <el-table-column v-if="showCampus" prop="校区" sortable label="校区"></el-table-column>
-        <el-table-column v-if="showMajor" prop="听课专业" label="听课专业"></el-table-column>
-        <el-table-column v-if="showSchedule" prop="排课信息" label="排课信息"></el-table-column>
-        <el-table-column v-if="showDepartment" prop="开课学院" label="开课学院"></el-table-column>
-        <el-table-column v-if="showStudentNumber" prop="选课人数" label="选课人数"></el-table-column>
+        <el-table-column v-if="showTerm" prop="term" label="学期" width="180"></el-table-column>
+        <el-table-column v-if="showCourseNumber" prop="courseCode" label="课程序号" width="120"></el-table-column>
+        <el-table-column v-if="showCourseName" prop="courseName" label="课程名称" min-width="150"></el-table-column>
+        <el-table-column v-if="showCampus" prop="campus" label="校区" width="120"></el-table-column>
+        <el-table-column v-if="showDepartment" prop="faculty" label="开课学院" min-width="150"></el-table-column>
+        <el-table-column v-if="showPeriod" prop="totalHours" label="总学时" width="90"></el-table-column>
+        <el-table-column v-if="showCourseType" prop="courseType" label="课程性质" width="120"></el-table-column>
+        <el-table-column v-if="showAssessment" prop="assessmentMode" label="考核方式" width="100"></el-table-column>
+        <el-table-column v-if="showTeacher" prop="teachers" label="授课教师" min-width="180"></el-table-column>
+        <el-table-column v-if="showSchedule" label="排课信息" min-width="250">
+          <template #default="scope">
+            <div style="white-space: pre-line; text-align: center;">{{ scope.row.schedule }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column v-if="showMajor" prop="majors" label="听课专业" min-width="250"></el-table-column>
+        <el-table-column v-if="showCapacity" prop="capacity" label="额定人数" width="100"></el-table-column>
+        <el-table-column v-if="showStudentNumber" prop="enrolled" label="选课人数" width="100"></el-table-column>
       </el-table>
+      </div>
 
       <!-- 分页控制 -->
        <el-pagination
@@ -182,6 +231,8 @@
   <div
     v-loading.fullscreen.lock="isLoading"
     element-loading-text="Loading"
+    element-loading-svg-view-box="0 0 1024 1024"
+    element-loading-svg='<path fill="currentColor" d="M512 64a32 32 0 0 1 32 32v192a32 32 0 0 1-64 0V96a32 32 0 0 1 32-32m0 640a32 32 0 0 1 32 32v192a32 32 0 1 1-64 0V736a32 32 0 0 1 32-32m448-192a32 32 0 0 1-32 32H736a32 32 0 1 1 0-64h192a32 32 0 0 1 32 32m-640 0a32 32 0 0 1-32 32H96a32 32 0 0 1 0-64h192a32 32 0 0 1 32 32M195.2 195.2a32 32 0 0 1 45.248 0L376.32 331.008a32 32 0 0 1-45.248 45.248L195.2 240.448a32 32 0 0 1 0-45.248m452.544 452.544a32 32 0 0 1 45.248 0L828.8 783.552a32 32 0 0 1-45.248 45.248L647.744 692.992a32 32 0 0 1 0-45.248M828.8 195.264a32 32 0 0 1 0 45.184L692.992 376.32a32 32 0 0 1-45.248-45.248l135.808-135.808a32 32 0 0 1 45.248 0m-452.544 452.48a32 32 0 0 1 0 45.248L240.448 828.8a32 32 0 0 1-45.248-45.248l135.808-135.808a32 32 0 0 1 45.248 0"></path>'
   >
 
   </div>
@@ -189,12 +240,24 @@
 
 <script>
 import { ElNotification } from 'element-plus';
+import { Delete, Plus, InfoFilled } from '@element-plus/icons-vue';
+import { markRaw } from 'vue';
 
 export default {
   data() {
     return {
-      // 搜索条件
-      conditions: [{ selectedItem: '', searchWord: '', connector: '' }], // 条件数组
+      // 图标
+      DeleteIcon: markRaw(Delete),
+      PlusIcon: markRaw(Plus),
+      
+      // 新的条件组结构
+      conditionGroups: [
+        {
+          conditions: [
+            { field: '', matchType: 'contains', value: '', options: [] }
+          ]
+        }
+      ],
       allItems: [], // 所有可检索的字段
       terms: [], // 所有学期
       selectedTerms: [],
@@ -204,12 +267,15 @@ export default {
       showTerm : true, // 是否显示学期
       showCourseNumber: true, // 是否显示课程序号
       showCourseName: true, // 是否显示课程名称
-      showTeacher: true, // 是否显示授课教师
-      showCourseType: true, // 是否显示课程性质
       showCampus: true, // 是否显示校区
-      showMajor: false, // 是否显示听课专业
-      showSchedule: true, // 是否显示排课信息
       showDepartment: true, // 是否显示开课学院
+      showPeriod: true, // 是否显示总学时
+      showCourseType: true, // 是否显示课程性质
+      showAssessment: true, // 是否显示考核方式
+      showTeacher: false, // 是否显示授课教师
+      showSchedule: true, // 是否显示排课信息
+      showMajor: false, // 是否显示听课专业
+      showCapacity: true, // 是否显示额定人数
       showStudentNumber: true, // 是否显示选课人数
 
       // 页码控制
@@ -222,13 +288,11 @@ export default {
       isWarning: false,
       msg: '',
 
-      // 以下是新 UI
+      // UI 状态
       loading_field: false, // 下拉菜单是否正在加载数据
       isIndeterminate: true,
       checkAll: false,
       activeNames: ['term', 'condition'],
-
-      //
     };
   },
 
@@ -240,137 +304,155 @@ export default {
   },
 
   methods: {
-    // 添加条件
-    addCondition() {
-      this.conditions.push({ selectedItem: '', searchWord: '', connector: '' });
+    // 添加新的条件组
+    addGroup() {
+      this.conditionGroups.push({
+        conditions: [
+          { field: '', matchType: 'contains', value: '', options: [] }
+        ]
+      });
     },
 
-    // 移除条件
-    removeCondition(index) {
-      if (this.conditions.length === 1) {
+    // 删除条件组
+    removeGroup(groupIndex) {
+      if (this.conditionGroups.length === 1) {
         this.isError = true;
-        this.msg = '至少需要一个条件';
+        this.msg = '至少需要一个条件组';
         return;
       }
-
-      this.conditions.splice(index, 1);
-      
-      // 如果只剩下一个条件，把 connector 设置为空
-      if (this.conditions.length === 1) {
-        this.conditions[0].connector = '';
-      }
+      this.conditionGroups.splice(groupIndex, 1);
     },
 
-    // 获取字段的选项
-    fetchFieldOptions(index) {
-      const fieldName = this.conditions[index].selectedItem; // 获取当前条件的字段名
-      const selectTerm = this.selectedTerms; // 获取当前选择的学期
-      this.loading_field = true; // 开始加载数据
-      // console.log(this.loading_field)
+    // 在指定组内添加条件
+    addConditionToGroup(groupIndex) {
+      this.conditionGroups[groupIndex].conditions.push({
+        field: '',
+        matchType: 'contains',
+        value: '',
+        options: []
+      });
+    },
 
-      // 请求字段的选项数据
+    // 删除指定组内的条件
+    removeCondition(groupIndex, condIndex) {
+      if (this.conditionGroups[groupIndex].conditions.length === 1) {
+        this.isError = true;
+        this.msg = '每个条件组至少需要一个条件';
+        return;
+      }
+      this.conditionGroups[groupIndex].conditions.splice(condIndex, 1);
+    },
+
+    // 获取字段类型
+    getFieldType(fieldName) {
+      const item = this.allItems.find(item => item.field === fieldName);
+      return item ? item.type : 'input';
+    },
+
+    // 获取字段的选项（仅对 select 类型字段）
+    fetchFieldOptions(groupIndex, condIndex) {
+      const condition = this.conditionGroups[groupIndex].conditions[condIndex];
+      const fieldName = condition.field;
+      
+      // 如果是 input 类型字段，不需要获取选项
+      if (this.getFieldType(fieldName) === 'input') {
+        return;
+      }
+      
+      const selectTerm = this.selectedTerms;
+      this.loading_field = true;
+
       fetch('/api/get_field_options', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ field_name: fieldName, select_term: selectTerm}),
+        body: JSON.stringify({ field_name: fieldName, select_term: selectTerm }),
       })
-        .then(response => response.json()) // 解析 JSON 数据
+        .then(response => response.json())
         .then(data => {
-          // 更新当前条件的可选项
           console.log('Field options:', data['data']);
-          this.conditions[index].options = data['data']; // 直接赋值，Vue 3 支持响应式
+          condition.options = data['data'];
           data['status'] === 'ERROR' ? this.isError = true : this.isError = false;
           data['status'] === 'WARNING' ? this.isWarning = true : this.isWarning = false;
-          // console.log('status:', data['status']);
-          // console.log('isWarning:', this.isWarning);
           this.msg = data['message'];
-          this.loading_field = false; // 停止加载数据
+          this.loading_field = false;
         })
         .catch(error => {
           console.error('Error fetching field options:', error);
           this.isError = true;
-          this.msg= '后端服务器未响应，请稍后再试';
-          // 把 options 设置为空数组
-          this.conditions[index].options = [];
-          this.loading_field = false; // 停止加载数据
+          this.msg = '后端服务器未响应，请稍后再试';
+          condition.options = [];
+          this.loading_field = false;
         });
-
-
-      // console.log(this.loading_field)
     },
 
-    updateConditionsWithSelectedTerms() {
-    // map 所有已经选择的学期，创建新的条件对象
-    const newConditions = this.selectedTerms.map(term => ({
-      selectedItem: '学期',
-      searchWord: term,
-      connector: 'OR' // 使用 OR 连接
-    }));
-
-    return newConditions; // 返回新条件数组
-  },
-  
     // 提交搜索请求
     submitSearch() {
-      this.isLoading = true; // 开始加载数据
-      const excludedTermConditions = this.updateConditionsWithSelectedTerms();
-
-      // 复制一份 conditions，确保原始数据不被修改
-      let requestData = this.conditions.map(cond => ({ ...cond }));
-
-      // 重新排序，确保相同的字段在一起，而且固定第一个条件的位置不变
-      requestData = [
-        requestData[0], // 第一个条件
-        ...requestData.slice(1).sort((a, b) => a.selectedItem.localeCompare(b.selectedItem)),
-      ];
+      this.isLoading = true;
 
       if (this.selectedTerms.length === 0) {
         this.isError = true;
         this.msg = '请选择至少一个学期';
-        this.isLoading = false; // 停止加载数据
+        this.isLoading = false;
         return;
       }
 
-      // 添加学期条件并过滤空条件
-      requestData = [...requestData, ...excludedTermConditions].filter(cond => cond.selectedItem || cond.searchWord);
+      // 检查是否有有效的条件
+      const hasValidCondition = this.conditionGroups.some(group =>
+        group.conditions.some(cond => cond.field && cond.value)
+      );
 
-      // console.log('Request data:', requestData);
-        // 发送 HTTP 请求到 Flask 后端
-        fetch('/api/search', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestData),
+      // 如果没有有效条件且选择了超过2个学期，则报错
+      if (!hasValidCondition && this.selectedTerms.length > 2) {
+        this.isError = true;
+        this.msg = '至少选择1个检索条件！不允许在不选择条件的情况下查看超过两个学期的课程！';
+        this.isLoading = false;
+        return;
+      }
+
+      // 构建新的请求数据格式
+      const requestData = {
+        groups: this.conditionGroups
+          .map(group => ({
+            conditions: group.conditions
+              .filter(cond => cond.field && cond.value)
+              .map(cond => ({
+                field: cond.field,
+                matchType: cond.matchType,
+                value: cond.value
+              }))
+          }))
+          .filter(group => group.conditions.length > 0),
+        terms: this.selectedTerms
+      };
+
+      console.log('Request data:', requestData);
+
+      fetch('/api/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      })
+        .then(response => response.json())
+        .then(data => {
+          this.isLoading = false;
+          this.searchResults = data['data'];
+          this.msg = data['message'];
+          console.log('Search results:', data['data']);
+          data['status'] === 'ERROR' ? this.isError = true : this.isError = false;
         })
-          .then(response => response.json())
-          .then(data => {
-            // 更新搜索结果
-            this.isLoading = false; // 停止加载数据
-            this.searchResults = data['data'];
-            this.msg = data['message'];
-            console.log('Search results:', data['data']);
-            data['status'] === 'ERROR' ? this.isError = true : this.isError = false;
-          })
-          .then(() => {
-            this.currentPage = 1; // 重置页码
-          })
-          .catch(error => {
-            this.isLoading = false; // 停止加载数据
-            this.isError = true;
-            this.msg= '后端服务器未响应，请稍后再试';
-            console.error('Error:', error);
-          });
-      },      
-
-    // 格式化教师信息
-    formatTeachers(row) {
-      const teachers = row['授课教师'] ? row['授课教师'].split(',') : [];
-      const ids = row['教师工号'] ? row['教师工号'].split(',') : [];
-
-      return teachers.map((teacher, index) => `${teacher.trim()} (${ids[index]?.trim() || ''})`).join(', ');
+        .then(() => {
+          this.currentPage = 1;
+        })
+        .catch(error => {
+          this.isLoading = false;
+          this.isError = true;
+          this.msg = '后端服务器未响应，请稍后再试';
+          console.error('Error:', error);
+        });
     },
 
     fetchTerms() {
@@ -440,6 +522,7 @@ export default {
     fetch('/api/get_searchable_fields')
       .then(response => response.json()) // 解析 JSON 数据
       .then(data => { 
+        // data['data'] 现在是对象数组 [{field: '课程序号', type: 'input'}, ...]
         this.allItems = data['data']; // 更新所有字段
         this.isLoading = false; // 停止加载数据
         this.msg = data['message'];
@@ -459,4 +542,37 @@ export default {
 </script>
 
 <style scoped>
+</style>
+
+<!-- 全局样式 - fullscreen loading 挂载在 body 上，scoped 样式无法覆盖 -->
+<style>
+/* 旧版 Loading 样式 - 覆盖 Element Plus 的 CSS 变量 */
+:root {
+  --el-loading-fullscreen-spinner-size: 42px;
+}
+
+/* 旧版 Loading 样式 - 与 app.c0acfd8887604e1d87ce.css 保持一致 */
+.el-loading-mask.is-fullscreen .el-loading-spinner .el-loading-text {
+  color: #409eff;
+  font-size: 14px;
+  margin: 3px 0;
+}
+
+.el-loading-mask.is-fullscreen .el-loading-spinner .circular {
+  height: 42px !important;
+  width: 42px !important;
+}
+
+.el-loading-mask.is-fullscreen .el-loading-spinner svg path {
+  fill: #409eff;
+}
+
+/* el-table 样式自定义 */
+.el-table thead {
+  color: #4c5c70 !important;
+}
+
+.el-table tbody {
+  color: #2b3b4e !important;
+}
 </style>

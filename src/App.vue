@@ -1,11 +1,17 @@
 <template>
-        <Header />
+    <div class="app-layout">
+        <div class="app-header">
+            <Header />
+        </div>
         
-        <el-main style="padding: 0px; margin: 0px">
+        <div class="app-main">
             <router-view />
-        </el-main>
+        </div>
         
-        <Footer />
+        <div class="app-footer">
+            <Footer />
+        </div>
+    </div>
 </template>
 
 <style>
@@ -14,6 +20,38 @@
   'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
     }
 
+    html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    #app {
+        height: 100%;
+    }
+
+    .app-layout {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+    }
+
+    .app-header {
+        flex-shrink: 0;
+        z-index: 1000;
+    }
+
+    .app-main {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .app-footer {
+        flex-shrink: 0;
+    }
 </style>
 
 <script>
