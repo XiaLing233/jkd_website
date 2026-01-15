@@ -20,11 +20,11 @@
     }
 
     .welcome-container {
-        background-image: url('../assets/welcome_bg_2.webp');
+        background-image: url('../assets/welcome_bg.png');
         /* background-image: url('../assets/welcome_bg.png'); */
         background-size: cover;
         background-position: center;
-        height: calc(100vh - 140px);
+        min-height: 100%;
         width: 100%;
     }
 

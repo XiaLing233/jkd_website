@@ -44,23 +44,8 @@
 
     </ul>
     <h3 id='数据库'>数据库</h3>
-    <p>采用了 <code>MySQL</code>，共一个数据库，储存了一张表格，是一学期的所有课程。</p>
+    <p>采用了 <code>MySQL</code>，和 <a href="https://xk.xialing.icu" target="_blank">xk.xialing.icu</a> 共用同一个数据库。爬虫的具体实现请参见<a href="https://github.com/XiaLing233/tongji-course-scheduler" target="_blank">仓库</a>。</p>
     <ul class="intro">
-    <li>对于从 1 系统导出的 <code>excel</code> 表格进行处理，需要先导出为 <code>.csv</code> 逗号分隔文件，再通过 <code>pandas</code> 库进行数据的优化整理。</li>
-
-    </ul>
-    <h2 id='可以改进的地方'>可以改进的地方</h2>
-    <ul class="intro">
-    <li>根据返回的有效内容，生成一个课程时间表</li>
-    </ul>
-
-    <h2>更新日志</h2>
-    <ul>
-        <li>2024年12月14日：更新2024-2025第2学期的课表</li>
-        <li>2024年12月28日：更新之前缺失的<i>09101, 14151, 16171, 19202</i>学期的课表，并决定显示选课人数（虽然看不到额定人数）</li>
-        <li>2025年1月13日：性能和安全性更新。限制了检索速度，不过一般不会触发。增加了日志记录。以及更新了证书。</li>
-        <li>2025年1月20日：限制了检索速度，可以针对逐个 IP 来限制了</li>
-        <li>2025年3月22日：更新24252学期的课表</li>
     </ul>
 </el-card>
 </template>
