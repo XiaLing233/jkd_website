@@ -18,7 +18,8 @@ jobs:
 
       - name: Pull latest code & restart backend
         run: |
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no \
+          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             set -e
             cd /home/ubuntu/jkd-web/flask-backend
             git fetch origin
