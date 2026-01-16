@@ -306,6 +306,7 @@ def search():
         where_clause = term_where
     
     # 构建复杂的 JOIN 查询来获取所有需要的信息
+    # 使用子查询来筛选符合条件的课程，然后在外层查询中获取所有专业
     query = f"""
         SELECT DISTINCT
             cal.calendarId,
@@ -314,7 +315,10 @@ def search():
             cd.courseName AS courseName,
             cp.campusI18n AS campus,
             f.facultyI18n AS faculty,
-            GROUP_CONCAT(DISTINCT m.name ORDER BY m.name SEPARATOR ', ') AS majors,
+            (SELECT GROUP_CONCAT(DISTINCT m2.name ORDER BY m2.name SEPARATOR ', ')
+             FROM majorandcourse mc2
+             LEFT JOIN major m2 ON mc2.majorId = m2.id
+             WHERE mc2.courseId = cd.id) AS majors,
             cd.period AS totalHours,
             cn.courseLabelName AS courseType,
             a.assessmentModeI18n AS assessmentMode,
