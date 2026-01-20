@@ -354,6 +354,16 @@ def search():
         # 将结果转换为字典列表
         results = [dict(zip(cursor.column_names, row)) for row in results]
         
+        # 处理 schedule 字段，去除重复的排课信息
+        for result in results:
+            if result.get('schedule'):
+                # 按行分割
+                schedule_lines = result['schedule'].split('\n')
+                # 去重并保持顺序（使用 dict.fromkeys 去重同时保持顺序）
+                unique_lines = list(dict.fromkeys(line for line in schedule_lines if line.strip()))
+                # 重新组合
+                result['schedule'] = '\n'.join(unique_lines)
+        
     except Exception as e:
         print(f"SQL Error: {e}")
         response_data['message'] = f"检索出错啦！<br>错误信息：{str(e)}"
