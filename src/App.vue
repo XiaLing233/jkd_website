@@ -7,10 +7,6 @@
         <div class="app-main">
             <router-view />
         </div>
-        
-        <div class="app-footer">
-            <Footer />
-        </div>
     </div>
 </template>
 
@@ -48,19 +44,12 @@
         overflow-y: auto;
         overflow-x: hidden;
     }
-
-    .app-footer {
-        flex-shrink: 0;
-    }
 </style>
 
 <script>
-    import Footer from './views/Footer.vue';
     import Header from './views/Header.vue';
     export default {
         components: {
-            // Menu,
-            Footer,
             Header,
         },
     };
