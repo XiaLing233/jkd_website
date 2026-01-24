@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main ]
     paths:
-      - "ics-flask/**"
+      - "ics-flask/*"
   workflow_dispatch:
 
 jobs:
