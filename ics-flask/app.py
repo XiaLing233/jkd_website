@@ -306,7 +306,7 @@ def search():
         where_clause = term_where
     
     # 构建复杂的 JOIN 查询来获取所有需要的信息
-    # 使用子查询来筛选符合条件的课程，然后在外层查询中获取所有专业
+    # 先使用子查询筛选符合条件的课程ID，然后在外层查询中获取所有教师信息
     query = f"""
         SELECT DISTINCT
             cal.calendarId,
@@ -333,11 +333,20 @@ def search():
         LEFT JOIN campus cp ON cd.campus = cp.campus
         LEFT JOIN faculty f ON cd.faculty = f.faculty
         LEFT JOIN teacher t ON cd.id = t.teachingClassId
-        LEFT JOIN majorandcourse mc ON cd.id = mc.courseId
-        LEFT JOIN major m ON mc.majorId = m.id
-        WHERE {where_clause}
-        GROUP BY cd.id, cal.calendarId, cal.calendarIdI18n, cd.code, cd.courseName, cp.campusI18n, 
-                 f.facultyI18n, cd.period, cn.courseLabelName, a.assessmentModeI18n, 
+        WHERE cd.id IN (
+            SELECT DISTINCT cd2.id
+            FROM coursedetail cd2
+            LEFT JOIN calendar cal ON cd2.calendarId = cal.calendarId
+            LEFT JOIN coursenature cn ON cd2.courseLabelId = cn.courseLabelId
+            LEFT JOIN campus cp ON cd2.campus = cp.campus
+            LEFT JOIN faculty f ON cd2.faculty = f.faculty
+            LEFT JOIN teacher t ON cd2.id = t.teachingClassId
+            LEFT JOIN majorandcourse mc ON cd2.id = mc.courseId
+            LEFT JOIN major m ON mc.majorId = m.id
+            WHERE {where_clause}
+        )
+        GROUP BY cd.id, cal.calendarId, cal.calendarIdI18n, cd.code, cd.courseName, cp.campusI18n,
+                 f.facultyI18n, cd.period, cn.courseLabelName, a.assessmentModeI18n,
                  cd.number, cd.elcNumber
         ORDER BY cal.calendarId ASC, cd.code ASC
     """
