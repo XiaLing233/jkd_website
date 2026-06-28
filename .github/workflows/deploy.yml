@@ -1,17 +1,30 @@
-name: Build and Push
+name: CI/CD
 
 on:
   push:
-    branches: [main]
     tags: ['v*']
     paths:
       - 'backend/**'
       - 'frontend/**'
       - 'docker-compose.yml'
       - '.github/workflows/deploy.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: docker compose -f docker-compose.test.yml up --build test-backend --exit-code-from test-backend
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.test.yml logs test-backend
+
   changes:
+    needs: test
     runs-on: ubuntu-latest
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
@@ -27,7 +40,9 @@ jobs:
 
   build-backend:
     needs: changes
-    if: needs.changes.outputs.backend == 'true'
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.changes.outputs.backend == 'true'
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -61,7 +76,9 @@ jobs:
 
   build-frontend:
     needs: changes
-    if: needs.changes.outputs.frontend == 'true'
+    if: |
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
+      needs.changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -97,7 +114,7 @@ jobs:
     needs: [build-backend, build-frontend]
     if: |
       always() &&
-      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' && github.ref == 'refs/heads/main' &&
       (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') &&
       (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped')
     runs-on: ubuntu-latest
