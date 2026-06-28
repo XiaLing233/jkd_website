@@ -65,6 +65,7 @@
         <div class="col-checks" style="margin-bottom:10px;display:flex;align-items:center;overflow-x:auto;white-space:nowrap">
           <el-text style="margin-right:10px"><el-icon><Filter /></el-icon>显示列：</el-text>
           <el-checkbox v-model="showTerm" label="学期" />
+          <el-checkbox v-model="showNewCode" label="新课程序号" />
           <el-checkbox v-model="showCourseCode" label="课程序号" />
           <el-checkbox v-model="showCourseName" label="课程名称" />
           <el-checkbox v-model="showCampus" label="校区" />
@@ -81,6 +82,7 @@
         <div style="overflow-x:auto">
           <el-table :data="searchResults" stripe :header-cell-style="{'text-align':'center'}" :cell-style="{'text-align':'center'}" style="width:100%">
             <el-table-column v-if="showTerm" prop="term" label="学期" width="180" />
+            <el-table-column v-if="showNewCode" prop="newCode" label="新课程序号" width="120" />
             <el-table-column v-if="showCourseCode" prop="courseCode" label="课程序号" width="120" />
             <el-table-column v-if="showCourseName" prop="courseName" label="课程名称" min-width="150" />
             <el-table-column v-if="showCampus" prop="campus" label="校区" width="120" />
@@ -195,7 +197,7 @@ const handleCheckAll = (val: boolean) => { selectedTerms.value = val ? terms.val
 const handleTermChange = (val: number[]) => { checkAll.value = val.length === terms.value.length; isIndeterminate.value = val.length > 0 && val.length < terms.value.length }
 
 // 列显示
-const showTerm = ref(true); const showCourseCode = ref(true); const showCourseName = ref(true)
+const showTerm = ref(true); const showNewCode = ref(true); const showCourseCode = ref(true); const showCourseName = ref(true)
 const showCampus = ref(true); const showFaculty = ref(true); const showPeriod = ref(true)
 const showCourseType = ref(true); const showAssessment = ref(true); const showTeacher = ref(false)
 const showSchedule = ref(true); const showMajor = ref(false); const showCapacity = ref(true); const showEnrolled = ref(true)

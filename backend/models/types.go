@@ -55,6 +55,7 @@ type FieldDef struct {
 
 var AllFields = []FieldDef{
 	{ID: "courseCode", Label: "课程序号", SearchType: "input", DBColumn: "cd.code"},
+	{ID: "newCode", Label: "新课程序号", SearchType: "input", DBColumn: "cd.newCode"},
 	{ID: "courseName", Label: "课程名称", SearchType: "input", DBColumn: "cd.courseName"},
 	{ID: "teacherName", Label: "授课教师", SearchType: "input", DBColumn: "t.teacherName"},
 	{ID: "teacherCode", Label: "教师工号", SearchType: "input", DBColumn: "t.teacherCode"},
@@ -107,6 +108,7 @@ type SearchRequest struct {
 type SearchResult struct {
 	CalendarID     int    `json:"calendarId"`
 	CalendarName   string `json:"term"`
+	NewCode        *string `json:"newCode"`
 	CourseCode     string `json:"courseCode"`
 	CourseName     string `json:"courseName"`
 	Campus         string `json:"campus"`

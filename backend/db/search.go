@@ -100,6 +100,7 @@ func (r *Router) GetFieldOptions(req models.FieldOptionsRequest) ([]models.Field
 
 const searchBaseQuery = `
 SELECT
+	cd.newCode,
 	cd.code,
 	cd.courseName,
 	cp.campusI18n,
@@ -154,27 +155,37 @@ ORDER BY cd.code ASC`
 
 	var results []models.SearchResult
 	for rows.Next() {
-		results = append(results, scanResult(rows, cal))
+		sr, err := scanResult(rows, cal)
+		if err != nil {
+			return nil, err
+		}
+		results = append(results, sr)
 	}
 	return results, rows.Err()
 }
 
-func scanResult(rows *sql.Rows, cal models.CalendarInfo) models.SearchResult {
+func scanResult(rows *sql.Rows, cal models.CalendarInfo) (models.SearchResult, error) {
 	var r models.SearchResult
+	var nCode, cCode, cName sql.NullString
 	var campus, faculty, courseType, assessment sql.NullString
 	var majors, teachers, schedule sql.NullString
 	var totalHours, capacity, enrolled sql.NullInt64
 
-	_ = rows.Scan(
-		&r.CourseCode, &r.CourseName,
+	if err := rows.Scan(
+		&nCode, &cCode, &cName,
 		&campus, &faculty,
 		&majors, &totalHours, &courseType, &assessment,
 		&capacity, &enrolled,
 		&teachers, &schedule,
-	)
+	); err != nil {
+		return r, err
+	}
 
 	r.CalendarID = cal.CalendarID
 	r.CalendarName = cal.CalendarName
+	if nCode.Valid { r.NewCode = &nCode.String }
+	r.CourseCode = cCode.String
+	r.CourseName = cName.String
 	r.Campus = campus.String
 	r.Faculty = faculty.String
 	r.Majors = majors.String
@@ -195,7 +206,7 @@ func scanResult(rows *sql.Rows, cal models.CalendarInfo) models.SearchResult {
 		v := int(enrolled.Int64)
 		r.Enrolled = &v
 	}
-	return r
+	return r, nil
 }
 
 // buildWhere 从搜索条件组构建 WHERE 子句（白名单映射，杜绝 SQL 注入）。
