@@ -46,6 +46,7 @@ func (r *Router) Calendars() ([]models.CalendarInfo, error) {
 	rows, err := r.metaDB.Query(
 		`SELECT calendarId, calendarIdI18n, db_name
 		 FROM active_calendars
+		 WHERE calendarIdI18n != '数据同步中…'
 		 ORDER BY calendarId DESC`,
 	)
 	if err != nil {

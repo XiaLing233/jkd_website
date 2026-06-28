@@ -69,6 +69,38 @@ func TestAPI_GetCalendars(t *testing.T) {
 	assert.NotEmpty(t, cals)
 }
 
+func TestAPI_GetCalendarsExcludesSyncing(t *testing.T) {
+	r, router := setupAPI(t)
+
+	// 插入一个正在同步中的学期（calendarIdI18n = '数据同步中…'）
+	_, err := router.Meta().Exec(
+		"INSERT IGNORE INTO calendar_registry (calendarId, calendarIdI18n) VALUES (?, '数据同步中…')",
+		888,
+	)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest("GET", "/api/calendars", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+	var resp models.APIResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	cals := resp.Data.([]interface{})
+
+	hasNormal := false
+	for _, cal := range cals {
+		cm := cal.(map[string]interface{})
+		name := cm["calendarName"].(string)
+		assert.NotEqual(t, "数据同步中…", name,
+			"同步中的学期不应出现在日历列表中")
+		if name == "测试学期" {
+			hasNormal = true
+		}
+	}
+	assert.True(t, hasNormal, "正常学期仍应返回")
+}
+
 func TestAPI_SearchCoursesValid(t *testing.T) {
 	r, _ := setupAPI(t)
 	body := `{"groups":[],"calendar_ids":[999],"page":1,"page_size":5}`
