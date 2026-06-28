@@ -13,12 +13,10 @@ import (
 )
 
 type Router struct {
-	cfg       *config.Config
-	metaDB    *sql.DB
-	calDBs    map[string]*sql.DB        // db_name → connection
-	calendars []models.CalendarInfo
-	calByID   map[int]models.CalendarInfo // calendarId → info
-	mu        sync.RWMutex
+	cfg    *config.Config
+	metaDB *sql.DB
+	calDBs map[string]*sql.DB
+	mu     sync.RWMutex
 }
 
 func NewRouter(cfg *config.Config) (*Router, error) {
@@ -35,10 +33,7 @@ func NewRouter(cfg *config.Config) (*Router, error) {
 		calDBs: make(map[string]*sql.DB),
 	}
 
-	if err := r.refreshCalendars(); err != nil {
-		return nil, fmt.Errorf("加载学期列表失败: %w", err)
-	}
-
+	log.Printf("[DB] 已连接元数据库 %s", cfg.DBMeta)
 	return r, nil
 }
 
@@ -46,10 +41,37 @@ func (r *Router) Meta() *sql.DB {
 	return r.metaDB
 }
 
-func (r *Router) Calendars() []models.CalendarInfo {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return r.calendars
+// Calendars 实时查询 active_calendars 视图（不做内存缓存，每次请求拉最新）。
+func (r *Router) Calendars() ([]models.CalendarInfo, error) {
+	rows, err := r.metaDB.Query(
+		`SELECT calendarId, calendarIdI18n, db_name
+		 FROM active_calendars
+		 ORDER BY calendarId DESC`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []models.CalendarInfo
+	for rows.Next() {
+		var c models.CalendarInfo
+		if err := rows.Scan(&c.CalendarID, &c.CalendarName, &c.DbName); err != nil {
+			return nil, err
+		}
+		list = append(list, c)
+	}
+	return list, rows.Err()
+}
+
+// CalendarByID 按 ID 查找单个学期。
+func (r *Router) CalendarByID(id int) (models.CalendarInfo, error) {
+	var c models.CalendarInfo
+	err := r.metaDB.QueryRow(
+		`SELECT calendarId, calendarIdI18n, db_name
+		 FROM active_calendars WHERE calendarId = ?`, id,
+	).Scan(&c.CalendarID, &c.CalendarName, &c.DbName)
+	return c, err
 }
 
 func (r *Router) GetConnection(dbName string) (*sql.DB, error) {
@@ -63,7 +85,6 @@ func (r *Router) GetConnection(dbName string) (*sql.DB, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	// 双重检查，避免重复创建连接池
 	if db, ok = r.calDBs[dbName]; ok {
 		return db, nil
 	}
@@ -84,45 +105,4 @@ func (r *Router) Close() {
 		db.Close()
 	}
 	r.metaDB.Close()
-}
-
-func (r *Router) refreshCalendars() error {
-	rows, err := r.metaDB.Query(
-		`SELECT calendarId, calendarIdI18n, db_name
-		 FROM active_calendars
-		 ORDER BY calendarId DESC`,
-	)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	var list []models.CalendarInfo
-	byID := make(map[int]models.CalendarInfo)
-	for rows.Next() {
-		var c models.CalendarInfo
-		if err := rows.Scan(&c.CalendarID, &c.CalendarName, &c.DbName); err != nil {
-			return err
-		}
-		list = append(list, c)
-		byID[c.CalendarID] = c
-	}
-	if err := rows.Err(); err != nil {
-		return err
-	}
-
-	r.mu.Lock()
-	r.calendars = list
-	r.calByID = byID
-	r.mu.Unlock()
-
-	log.Printf("[DB] 已加载 %d 个学期", len(list))
-	return nil
-}
-
-func (r *Router) CalendarByID(id int) (models.CalendarInfo, bool) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	c, ok := r.calByID[id]
-	return c, ok
 }

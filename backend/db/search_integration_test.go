@@ -29,9 +29,33 @@ func setupDB(t *testing.T) *Router {
 
 func TestDB_Calendars(t *testing.T) {
 	r := setupDB(t)
-	cals := r.Calendars()
+	cals, err := r.Calendars()
+	require.NoError(t, err)
 	require.NotEmpty(t, cals)
 	assert.Equal(t, testutil.TestCalID, cals[0].CalendarID)
+}
+
+func TestDB_CalendarsRefreshAfterInsert(t *testing.T) {
+	r := setupDB(t)
+
+	// 启动后插入新学期
+	_, err := r.Meta().Exec(
+		"INSERT INTO calendar_registry (calendarId, calendarIdI18n) VALUES (998, '新测试学期')")
+	require.NoError(t, err)
+	defer r.Meta().Exec("DELETE FROM calendar_registry WHERE calendarId = 998")
+
+	// 查询应能立即看到新加学期
+	cals, err := r.Calendars()
+	require.NoError(t, err)
+
+	found := false
+	for _, c := range cals {
+		if c.CalendarID == 998 {
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "启动后新增的学期应立即出现在列表中")
 }
 
 func TestDB_SearchAll(t *testing.T) {

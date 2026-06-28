@@ -31,8 +31,8 @@ func (r *Router) GetLatestUpdate() (*time.Time, string, error) {
 func (r *Router) Search(req models.SearchRequest) ([]models.SearchResult, error) {
 	var all []models.SearchResult
 	for _, id := range req.CalendarIDs {
-		cal, ok := r.CalendarByID(id)
-		if !ok {
+		cal, err := r.CalendarByID(id)
+		if err != nil {
 			continue
 		}
 		db, err := r.GetConnection(cal.DbName)
@@ -260,11 +260,12 @@ func dedupLines(s string) string {
 
 func (r *Router) filterCalendarsByID(ids []int) []models.CalendarInfo {
 	if len(ids) == 0 {
-		return r.Calendars()
+		cals, _ := r.Calendars()
+		return cals
 	}
 	var filtered []models.CalendarInfo
 	for _, id := range ids {
-		if c, ok := r.CalendarByID(id); ok {
+		if c, err := r.CalendarByID(id); err == nil {
 			filtered = append(filtered, c)
 		}
 	}
