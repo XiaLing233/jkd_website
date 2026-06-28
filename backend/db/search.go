@@ -224,7 +224,7 @@ func buildWhere(groups []models.SearchGroup) (string, []interface{}) {
 	}
 
 	if len(clauses) == 0 {
-		return "", nil
+		return "1=1", nil
 	}
 	return strings.Join(clauses, " AND "), params
 }

@@ -2,10 +2,10 @@
   <el-header class="bg-white flex items-center justify-between px-5">
     <div class="py-3 flex items-center gap-4 min-w-0">
       <a href="https://1.tongji.edu.cn" class="shrink-0">
-        <img height="45" width="167" src="@/assets/tongji.webp" alt="tongji" />
+        <img class="h-[45px] w-auto max-w-[167px]" src="/assets/tongji.webp" alt="tongji" />
       </a>
       <a href="/" class="shrink-0">
-        <img height="45" src="@/assets/title.webp" alt="title" />
+        <img class="h-[45px] w-auto" src="/assets/title.webp" alt="title" />
       </a>
       <div class="px-3 py-1.5 bg-gray-100 border border-gray-200 rounded text-base text-black whitespace-nowrap">
         更新时间：{{ lastUpdateTime }}

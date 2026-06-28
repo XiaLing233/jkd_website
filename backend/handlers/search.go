@@ -51,8 +51,11 @@ func SearchCourses(router *db.Router) gin.HandlerFunc {
 		if page < 1 {
 			page = 1
 		}
-		if pageSize < 1 || pageSize > 1000 {
+		if pageSize < 1 {
 			pageSize = 50
+		}
+		if pageSize > 100 {
+			pageSize = 100
 		}
 
 		total := len(results)
