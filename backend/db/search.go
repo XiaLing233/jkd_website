@@ -134,13 +134,25 @@ var selectFieldOptionQueries = map[string]string{
 
 // ─── 内部函数 ───
 
+// searchWhereSubquery 内层子查询：JOIN 所有可能用于过滤的表，确保任意字段都可作为 WHERE 条件。
+const searchWhereSubquery = `
+SELECT DISTINCT cd.id
+FROM coursedetail cd
+LEFT JOIN coursenature cn ON cd.courseLabelId = cn.courseLabelId
+LEFT JOIN campus       cp ON cd.campus         = cp.campus
+LEFT JOIN faculty      f  ON cd.faculty        = f.faculty
+LEFT JOIN teacher      t  ON cd.id             = t.teachingClassId
+LEFT JOIN majorandcourse mc ON cd.id           = mc.courseId
+LEFT JOIN major        m  ON mc.majorId        = m.id
+`
+
 func searchInDB(db *sql.DB, req models.SearchRequest, cal models.CalendarInfo) ([]models.SearchResult, error) {
 	where, params := buildWhere(req.Groups)
 	if where == "" {
 		return nil, nil
 	}
 
-	query := searchBaseQuery + "\nWHERE " + where + `
+	query := searchBaseQuery + "\nWHERE cd.id IN (\n" + searchWhereSubquery + "\nWHERE " + where + "\n)\n" + `
 GROUP BY cd.id, cd.code, cd.courseName,
          cp.campusI18n, f.facultyI18n, cd.period,
          cn.courseLabelName, a.assessmentModeI18n,
