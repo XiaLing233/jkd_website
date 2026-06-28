@@ -138,6 +138,27 @@ func TestAPI_SearchByTeacher(t *testing.T) {
 	assert.Contains(t, first["teachers"], "关佶红")
 }
 
+func TestAPI_SearchByMajor(t *testing.T) {
+	r, _ := setupAPI(t)
+	body := `{"groups":[{"conditions":[{"field":"major","matchType":"contains","value":"计算机科学与技术"}]}],"calendar_ids":[999],"page":1,"page_size":5}`
+	req := httptest.NewRequest("POST", "/api/courses/search", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+
+	var resp models.APIResponse
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	assert.Equal(t, 200, resp.Code)
+
+	pd := resp.Data.(map[string]interface{})
+	items := pd["items"].([]interface{})
+	require.NotEmpty(t, items)
+	first := items[0].(map[string]interface{})
+	assert.Contains(t, first["majors"], "计算机科学与技术")
+}
+
 func TestAPI_FieldOptions(t *testing.T) {
 	r, _ := setupAPI(t)
 	body := `{"field":"campus","calendar_ids":[999]}`
