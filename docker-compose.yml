@@ -1,11 +1,29 @@
+# ================================================================
+#  ics-website — 同济大学课程检索系统
+# ================================================================
+#
+#  本地开发（从源码构建）:
+#    docker compose build && docker compose up -d
+#
+#  服务器部署（从 ghcr.io 拉镜像）:
+#    docker compose pull && docker compose up -d
+#
+#  回滚到指定版本:
+#    docker pull ghcr.io/xialing233/jkd-website-backend:v122.20260628
+#    docker compose up -d
+#
+# ================================================================
+
 services:
   backend:
+    image: ghcr.io/xialing233/jkd-website-backend:latest
     build: ./backend
     container_name: jkd-backend
     env_file: .env
     restart: always
 
   frontend:
+    image: ghcr.io/xialing233/jkd-website-frontend:latest
     build: ./frontend
     container_name: jkd-frontend
     ports:
